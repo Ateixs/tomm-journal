@@ -12,34 +12,39 @@ the transport is unmodified reliable \quic, and whether the model
 offers a mechanism rather than a fit.
 
 \begin{table}[!t]
-  \caption{Positioning of \crystal against the closest prior work.
-  ``Subj.'': subjective study; ``HMD'': ratings collected in a
-  head-mounted display; ``Net.'': network delay/loss as independent
-  variables; ``Model'': \qoe model fitted to subjective scores;
-  ``Rel.\ \quic'': unmodified, fully reliable \quic; ``Mech.'': the
-  model derives its explanatory variable from transport mechanics
-  rather than fitting delay and loss directly.}
+  \caption{Positioning of \crystal against related work.
+  \yes{} = supported, \no{} = not addressed, \partially{} = partial.
+  ``Network impairment'': delay and loss as controlled independent
+  variables; ``Reliable \quic'': unmodified, fully reliable \quic
+  (\partially{} denotes reliable \gls{tcp} or a modified \quic);
+  ``Mechanistic model'': the explanatory variable is derived from
+  transport mechanics rather than fitted to delay and loss directly.}
   \label{tab:positioning}
   \centering
   \footnotesize
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{@{}llcccccc@{}}
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llcccccc@{}}
     \toprule
-    Work & Codec & Subj. & \glsentryshort{vr} \glsentryshort{hmd} & Net. & Model & Rel.\ \quic & Mech. \\
+    \thead[l]{Work} & \thead[l]{Codec} &
+    \thead{Subjective\\Study} & \thead{VR\\Headset} &
+    \thead{Network\\Impairment} & \thead{QoE\\Model} &
+    \thead{Reliable\\\quic} & \thead{Mechanistic\\Model} \\
     \midrule
-    Cox et al.~\cite{Cox2023}              & \vpcc       & \checkmark & --         & --         & --         & -- & -- \\
-    Nguyen et al.~\cite{nguyen2023}        & \vpcc       & \checkmark & \checkmark & --         & --         & -- & -- \\
-    Van Damme et al.~\cite{vandamme2024}   & \vpcc       & \checkmark & --         & --         & \checkmark & -- & -- \\
-    Dumic et al.~\cite{dumic2023}          & \vpcc       & \checkmark & --         & \checkmark & --         & -- & -- \\
-    Wen et al.~\cite{wen2024}              & --          & --         & --         & \checkmark & \checkmark & -- & -- \\
-    Ravuri et al.~\cite{ravuri2023}        & \vpcc       & --         & --         & \checkmark & --         & partial & -- \\
-    Rudolph et al.~\cite{rudolph2025rabbit}& \vpcc       & --         & --         & --         & --         & -- & -- \\
-    Udora et al.~\cite{qoeholographic,udora2025thesis} & uncompressed & \checkmark & \checkmark & \checkmark & \checkmark & \glsentryshort{tcp} & -- \\
-    \mosaic~\cite{mosaic2026}              & \vpcc       & --         & \checkmark & \checkmark & --         & \checkmark & -- \\
-    \vquest~\cite{vquest2026}              & frame-indep. & \checkmark & \checkmark & \checkmark & --         & \checkmark & -- \\
-    \textbf{\crystal (this work)}          & \vpcc       & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    Cox et al.~\cite{Cox2023}               & \vpcc        & \yes & \no        & \no        & \no  & \no        & \no \\
+    Nguyen et al.~\cite{nguyen2023}         & \vpcc        & \yes & \partially & \no        & \no  & \no        & \no \\
+    Van Damme et al.~\cite{vandamme2024}    & \vpcc        & \yes & \no        & \no        & \yes & \no        & \no \\
+    Dumic \& da Silva Cruz~\cite{dumic2023} & \vpcc        & \yes & \no        & \partially & \no  & \no        & \no \\
+    Wen et al.~\cite{wen2024}               & --           & \no  & \no        & \yes       & \yes & \no        & \no \\
+    Ravuri et al.~\cite{ravuri2023}         & \vpcc        & \no  & \no        & \yes       & \no  & \partially & \no \\
+    Rudolph et al.~\cite{rudolph2025rabbit} & \vpcc        & \no  & \no        & \no        & \no  & \no        & \no \\
+    Udora et al.~\cite{qoeholographic,udora2025thesis} & uncompressed & \yes & \yes & \yes & \yes & \partially & \no \\
+    \mosaic~\cite{mosaic2026}               & \vpcc        & \yes & \yes       & \yes       & \no  & \yes       & \no \\
+    \vquest~\cite{vquest2026}               & frame-indep. & \yes & \yes       & \yes       & \no  & \yes       & \no \\
+    \midrule
+    \textbf{\crystal (ours)}                & \vpcc        & \yes & \yes       & \yes       & \yes & \yes       & \yes \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
 \subsection{Immersive Media Streaming for \gls{vr}}
