@@ -118,40 +118,90 @@ A \vpcc stream reaches the renderer as a sequence of \gof chunks, each
 fetched as an HTTP object against its own presentation deadline. The
 transport therefore matters at the granularity of the chunk: what
 happens to one chunk when a packet is lost or delayed, and whether
-that disturbance propagates to the chunks behind it. Over
-HTTP/1.1 and HTTP/2 the answer is dictated by \gls{tcp}: a single lost
-segment holds back every byte queued behind it on the connection
-(\gls{hol} blocking), and the multiplexing that HTTP/2 added at the
-application layer cannot undo an in-order guarantee imposed below it.
-\quic~\cite{rfc9000} was designed to remove that coupling. It carries
-multiplexed, independently ordered streams over \gls{udp} in user
-space, so loss on one stream does not stall another; it folds
-\gls{tls}~1.3 into a 1-\gls{rtt} handshake (0-\gls{rtt} on resumption);
-and it identifies a connection by an ID rather than a 4-tuple, so a
-session survives an address change. \quic is the substrate of
-\gls{http3}, which by August 2025 was served by roughly 35\% of public
-web sites~\cite{w3techs2025}, and it is the transport a deployed
-volumetric service would most plausibly use: production CDNs, browsers
-and mobile stacks already ship it, and it needs no change to the
-HTTP-object model that a chunked \vpcc stream fits naturally.
+that disturbance propagates to the chunks behind it. Over HTTP/1.1
+and HTTP/2 the answer is dictated by \gls{tcp}: a single lost segment
+holds back every byte queued behind it on the connection (\gls{hol}
+blocking), and the multiplexing HTTP/2 added at the application layer
+cannot undo an in-order guarantee imposed below it. \quic was designed
+to remove that coupling. Standardised by the \gls{ietf} as \quic
+version~1 in RFC~9000~\cite{rfc9000}, with its \gls{tls} integration in
+RFC~9001~\cite{rfc9001} and its loss-detection and congestion-control
+procedures in RFC~9002~\cite{rfc9002}, it is the substrate of
+\gls{http3} (RFC~9114~\cite{rfc9114}). Adoption is substantial: by
+October 2026, 40.9\% of public web sites advertised \gls{http3}
+support~\cite{w3techs2026}, and roughly one fifth of the HTTP requests
+observed by Cloudflare were carried over it~\cite{cfradar2026}. The
+testbed of Section~\ref{sec:system} uses \quic version~1 as
+implemented by quic-go~\cite{quicgo} inside the Caddy
+server~\cite{caddy}, with \gls{tls}~1.3 and AES-128-GCM, which is the
+configuration a production \gls{http3} origin would run.
 
-Two properties of standard \quic determine how network impairment
-reaches a volumetric decoder. First, \quic is \emph{reliable}: lost
-packets are detected and retransmitted, and stream data is delivered
-in order. Loss is detected either by acknowledgement (a packet is
-declared lost when later packets are acknowledged beyond a reordering
-threshold, typically three) or by a \gls{pto} derived from
-round-trip estimates,
+\paragraph{Connections, handshake and streams.}
+\quic runs over \gls{udp} in user space. A connection is identified by
+connection IDs chosen by each endpoint rather than by the 4-tuple of
+addresses and ports, so a client that changes network path keeps the
+connection alive (connection migration). The cryptographic and
+transport handshakes are combined: \gls{tls}~1.3 runs inside \quic
+CRYPTO frames, so a fresh connection is established in one round trip,
+and a client resuming a connection to a known server may send
+application data in its first flight (0-\gls{rtt}), at the cost that
+such data is replayable and must be idempotent~\cite{rfc9001}. All
+packets after the first are encrypted and authenticated with an AEAD,
+and even packet headers are protected, so middleboxes cannot inspect
+or modify transport state. Within a connection, data flows on
+\emph{streams}: lightweight, independently ordered byte sequences that
+either endpoint can open, bidirectional or unidirectional, each with
+its own flow-control window in addition to a connection-level window.
+Ordering and reliability are guaranteed \emph{per stream}, not across
+streams, so a packet lost on one stream delays only that stream.
+\gls{http3} maps each request--response exchange to its own
+bidirectional stream, which is what eliminates the transport-level
+\gls{hol} blocking of HTTP/2 over \gls{tcp}; header compression moves
+from HPACK to QPACK, designed so that a lost header block does not
+stall unrelated streams~\cite{rfc9114}.
+
+\paragraph{Packets, acknowledgements and loss recovery.}
+\quic separates packets from the frames they carry. Packet numbers are
+monotonically increasing and never reused, which removes the
+retransmission ambiguity of \gls{tcp} sequence numbers and yields
+clean \gls{rtt} samples; when a packet is declared lost, the frames it
+carried are re-sent in a new packet with a new number. Receivers report
+ACK ranges together with the delay they introduced before
+acknowledging, so the sender's \gls{rtt} estimate can subtract that
+delay. RFC~9002 declares a packet lost by either of two rules: a
+packet-threshold rule, when a later packet at least
+$k_{\mathrm{PacketThreshold}}=3$ ahead has been acknowledged, and a
+time-threshold rule, when a later packet was acknowledged and the
+packet in question is older than $\tfrac{9}{8}\max(\mathrm{sRTT},
+\mathrm{latest\_RTT})$. When no acknowledgements arrive at all, a
+\gls{pto} fires and the sender probes with new data; the timer is
 \begin{equation}
-  \mathrm{\gls{pto}} = \mathrm{sRTT} + \max(4\,\mathrm{\gls{rtt}}_{\mathrm{var}},
+  \mathrm{PTO} = \mathrm{sRTT} + \max(4\,\mathrm{RTT}_{\mathrm{var}},
   k_{\mathrm{granularity}}) + \mathrm{max\_ack\_delay},
   \label{eq:pto}
 \end{equation}
-so that the recovery cost of a loss is at least one additional \gls{rtt} and,
-when a tail packet is lost, a full \gls{pto}. Second, independence between
-streams does not help a \vpcc \gof: all packets of a \gof must arrive
-before the \gof can be decoded, so a single late packet delays the whole
-delivery unit. The combination converts packet loss into
+and it doubles on each consecutive expiry. Congestion control is
+pluggable; RFC~9002 specifies a NewReno-style controller as the
+baseline and quic-go ships Cubic by default~\cite{quicgo}. The
+practical consequence is that the recovery cost of a loss is at least
+one \gls{rtt} when later packets are flowing, and a full \gls{pto} when
+the lost packet is the last of a burst (a tail loss), which is the
+common case at the end of a chunk, and that every recovery is
+accompanied by a congestion-window reduction whose effect persists into
+the following transfers.
+
+\paragraph{What reliability means for a \gof chunk.}
+Two properties of standard \quic determine how network impairment
+reaches a volumetric decoder. First, \quic is \emph{reliable}: lost
+packets are detected and retransmitted, and stream data is delivered
+in order. Unreliable delivery exists only as an extension, the
+DATAGRAM frame of RFC~9221~\cite{rfc9221}, which \gls{http3} does not
+use for request bodies; the partially reliable variants in the
+literature~\cite{ravuri2023,haseeb2025} build on it or on custom stream
+cancellation. Second, stream independence does not help a \vpcc \gof:
+a chunk is one HTTP object on one stream, and all of its packets must
+arrive before the \gof can be decoded, so a single late packet delays
+the whole delivery unit. The combination converts packet loss into
 \emph{delay}, and delay into \emph{stalls} whenever the recovered \gof
 misses its playout deadline. Packet-level measurement on the testbed
 of Section~\ref{sec:system} shows the two impairments leave distinct
@@ -168,8 +218,4 @@ frames disrupt different durations of content~\cite{mosaic2026};
 this is precisely the gap between a network observable and a
 perceptual variable that $\tlf$ is defined to close. Equation~\eqref{eq:pto} and the \gof size
 are the two quantities from which Layer~1 of \crystal derives the
-temporal loss fraction. Partially reliable \quic
-variants~\cite{ravuri2023,haseeb2025} and datagram-based transports
-such as \gls{webrtc} change this behaviour by allowing stale data to be
-dropped; they are discussed in Section~\ref{sec:related} but are
-outside the regime modelled here.
+temporal loss fraction.
