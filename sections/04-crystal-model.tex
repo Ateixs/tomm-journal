@@ -27,8 +27,8 @@ expected stall duration accumulates into}
   \label{eq:tlf}
 \end{equation}
 \todo{with $\tlf = f(S, \mathrm{RTT}, R, G, \plr)$ containing no
-perceptual free parameter. State the two consequences that become H1
-and H2: (i) delay and loss enter $\tlf$ jointly through $S$ and $R$,
+perceptual free parameter. State the two consequences that become the first two predictions of
+Section~\ref{sec:model-predictions}: (i) delay and loss enter $\tlf$ jointly through $S$ and $R$,
 so their effects on \qoe cannot be additive; (ii) $G$ changes both the
 exposure (more packets per \gof) and the slack, so resilience is
 governed by \gof size rather than by codec identity.}
@@ -48,34 +48,33 @@ $\tlf \to \infty$. Prediction: the three $\qc$ are $\approx 1$ and
 statistically indistinguishable, collapsing the model to
 $\mos = 1 + 4e^{-\alpha\tlf}$.}
 
-\subsection{Hypotheses}
-\label{sec:model-hyp}
-\begin{description}[leftmargin=*]
-  \item[H1 (Separability, the null).] Latency and loss effects on
-        \mos are additive, as assumed by Eq.~\eqref{eq:udora}.
-        \crystal predicts the opposite: an interaction, because both
-        act through $\tlf$. Pre-registered pattern across the four
-        slices: $A \approx B \approx C \gg D$.
-  \item[H2 (Structure governs resilience).] For fixed delay and loss,
-        $\tlf$, and hence \mos, depends on \gof size $G$, not on codec
-        identity or quality level. \todo{State the direction predicted
-        by Layer~1 for \gls{ldp} \gof{}=4 versus \gof{}=16.}
-  \item[H3 (One parameter generalises).] A single $\alpha$ fitted on
-        one subset of conditions predicts held-out conditions without
-        refitting, at a held-out \gls{plcc} exceeding the 0.57--0.66 reported
-        for the five-coefficient model of Eq.~\eqref{eq:udora}.
-\end{description}
+\subsection{Model Predictions}
+\label{sec:model-predictions}
+Because $\tlf$ is derived rather than fitted, the model commits to
+three predictions before any rating is collected, and the evaluation of
+Section~\ref{sec:results} is organised around them.
+
+\emph{Latency and loss interact.} Both impairments enter $\tlf$ jointly
+through the slack $S$ and the recovery cost $R$, so their effects on
+\mos cannot be additive as Eq.~\eqref{eq:udora} assumes. Across the
+four slices of Section~\ref{sec:design-network} the model predicts
+$A \approx B \approx C \gg D$: either impairment alone is absorbed by
+the slack, and only their combination exhausts it.
+
+\emph{Delivery-unit structure, not loss magnitude, governs
+resilience.} For fixed delay and loss, $\tlf$ depends on the \gof size
+$G$ through both the number of packets at risk per unit and the slack
+available to recover them. \todo{State the direction Layer~1 predicts
+for \gls{ldp} \gof{}=4 versus \gof{}=16.}
+
+\emph{One perceptual parameter generalises.} A single $\alpha$ fitted
+on one subset of conditions predicts held-out conditions without
+refitting, at a held-out \gls{plcc} exceeding the 0.57--0.66 reported
+for the five-coefficient regression of Eq.~\eqref{eq:udora}.
 
 \subsection{Parameter Estimation}
 \label{sec:model-fit}
 \todo{$\alpha$ by non-linear least squares on per-slice \mos; bootstrap
-confidence intervals; \gls{clmm} with
-participant and content as random effects for the hypothesis tests;
-held-out evaluation by leaving one slice or one content out.}
-
-\subsection{Prediction for Other Representations}
-\label{sec:model-predict}
-\todo{Layer~1 with $G = 1$ (no delivery-unit coupling): Udora's
-uncompressed per-frame streaming as an external check. Extension to
-\threedgs, whose primitives are independently decodable: state what
-$\tlf$ predicts and what observation would falsify it.}
+confidence intervals; \gls{clmm} with participant and content as
+random effects; held-out evaluation by leaving one slice or one content
+out.}

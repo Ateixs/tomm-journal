@@ -221,8 +221,7 @@ density levels, producing a MOS on the 1--5 scale. Three features of
 this work make it the right comparator. Its transport is reliable
 (\gls{tcp}) so its data carry the same loss-to-latency signature as ours;
 \quic is listed as future work. Its functional form is additive in
-delay and loss, which is a separability assumption identical to our
-H1. And its held-out performance is modest, with \gls{plcc} between 0.57 and
+delay and loss, which is exactly the separability that \crystal predicts will fail. And its held-out performance is modest, with \gls{plcc} between 0.57 and
 0.66 across quality levels, which is what one expects when five free
 coefficients absorb a mechanism rather than express it. Udora's
 uncompressed per-frame streaming also provides an external reference
@@ -270,7 +269,7 @@ reported a three-tier subjective study ($N=20$) in which each network
 tier was paired with a matched encoder configuration (\gls{ra} \gof{}=32;
 \gls{ldp} \gof{}=16; \gls{ldp} \gof{}=4). Its central observation, that the tier
 with lower loss but \gof{}=4 scored lower MOS than the tier with higher
-loss and \gof{}=16, motivates H2, but the paired design could not
+loss and \gof{}=16, motivates the structural prediction of Section~\ref{sec:model-predictions}, but the paired design could not
 separate impairment from configuration. The second~\cite{vquest2026}
 characterised the \quic transport signatures of latency and loss for a
 frame-independent codec and measured the corresponding perceptual
@@ -291,7 +290,7 @@ reported a three-tier subjective study ($N=20$) in which each network
 tier was paired with a matched encoder configuration (\gls{ra} \gof{}=32;
 \gls{ldp} \gof{}=16; \gls{ldp} \gof{}=4). Its central observation, that the tier
 with lower loss but \gof{}=4 scored lower MOS than the tier with higher
-loss and \gof{}=16, motivates H2, but the paired design could not
+loss and \gof{}=16, motivates the structural prediction of Section~\ref{sec:model-predictions}, but the paired design could not
 separate impairment from configuration. \vquest~\cite{vquest2026}
 characterised the \quic transport signatures of latency and loss for a
 frame-independent codec and measured the corresponding perceptual

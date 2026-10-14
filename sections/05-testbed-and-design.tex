@@ -1,4 +1,4 @@
-\section{System and Testbed}
+\section{Testbed and Experimental Design}
 \label{sec:system}
 
 The testbed is the \mosaic architecture of~\cite{mosaic2026}: two
@@ -112,14 +112,14 @@ conditions are attributable to transport rather than compression;
   \end{tabular}
 \end{table}
 
-\subsection{Impairment Design}
-\label{sec:sys-impairment}
+\subsection{Network Conditions}
+\label{sec:design-network}
 \todo{Four slices (Table~\ref{tab:impairments}). Unlike the three-tier
 design of~\cite{mosaic2026}, where each tier paired an impairment
 with a matched encoder configuration, slices B--D here hold the
 encoder fixed at \gls{ldp} \gof{}=4 so that loss, latency and their
-interaction are separable; the \gls{ldp} \gof{}=16 block provides the H2
-contrast. Latency and loss values anchored to 3GPP 5G service
+interaction are separable; the \gls{ldp} \gof{}=16 block provides the
+delivery-unit contrast. Latency and loss values anchored to 3GPP 5G service
 performance targets~\cite{3gpp22261}.}
 
 \begin{table}[t]
@@ -138,3 +138,31 @@ performance targets~\cite{3gpp22261}.}
     \bottomrule
   \end{tabular}
 \end{table}
+
+\subsection{Subjective Experiment}
+\label{sec:method}
+\paragraph{Protocol.}
+\todo{ITU-T P.910 \gls{acr}~\cite{p910}, five-point scale, rated
+attribute: smoothness of playback. Each participant views all three
+sequences under all four slices; session $\approx$\SI{30}{\minute};
+calibration phase on Slice~A; presentation order counterbalanced
+(addressing the limitation noted in~\cite{mosaic2026}).}
+
+\paragraph{Participants and screening.}
+\todo{$N=50$; demographics; visual-acuity and \gls{xr}-familiarity
+screening; outlier rejection per ITU-R BT.500~\cite{bt500} /
+ITU-T P.913~\cite{p913}.}
+
+\paragraph{Ethics.}
+\todo{Approval via Plataforma Brasil / CEP, protocol number
+\anon[withheld for review]{XXXXX}; informed consent; ACM policy on
+research involving human participants.}
+
+\subsection{Data Processing and Statistical Analysis}
+\label{sec:design-analysis}
+\todo{Per-condition \mos with bootstrap 95\% \glspl{ci}; \gls{clmm}
+with participant and content as random effects and a latency$\times$loss
+interaction term; \gof contrast; leave-one-out evaluation of the pooled
+$\alpha$; \gls{plcc}, \gls{srocc}, \gls{rmse} on held-out conditions.
+Per-\gof telemetry (deadline outcome, completion time) aligned with
+each rating session for the Layer~1 analysis.}

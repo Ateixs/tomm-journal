@@ -6,7 +6,7 @@ Compiler: pdfLaTeX. Main document: `main.tex`.
 
 ## Layout
 - `main.tex` — preamble, ACM metadata, macros, `\input` of sections
-- `sections/` — one file per section; write here
+- `sections/` — one file per section (01 intro … 08 conclusion, A appendix); write here
 - `references.bib` — BibTeX, `ACM-Reference-Format` style
 - `acronyms.tex` — glossaries entries; `\gls{key}` expands on first use, `\glspl{}` plural, `\glsentryshort{}` in tables/titles. Terminology macros (`\vpcc`, `\qoe`, `\mos`, `\hmd`, `\gof`, `\fiveg`…) route through `\gls`; `\quic` is literal (RFC 9000: a name, not an acronym). `\glsresetall` after `\maketitle` so the Introduction re-expands after the abstract.
 - `figures/` — PDFs/PNGs (resolved via `\graphicspath`)

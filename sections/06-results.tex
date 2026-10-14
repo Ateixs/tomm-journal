@@ -1,7 +1,8 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Objective Characterisation: Layer 1}
+\subsection{Transport Characterisation}
+\label{sec:res-transport}
 \todo{Loss-to-latency conversion under reliable \quic; \gof stall
 distributions per \gof size; measured $\tlf$ versus the Layer~1
 prediction.}
@@ -48,7 +49,20 @@ prediction.}
   \label{fig:mos-impairment}
 \end{figure}
 
-\subsection{Model Calibration: Layer 2}
+\subsection{Analysis of Opinion Scores}
+\label{sec:res-mos}
+\todo{Per-slice and per-content \mos with \glspl{ci}; main effects from the \gls{clmm}.}
+
+\subsection{Interaction of Latency and Loss}
+\label{sec:res-interaction}
+\todo{The $A \approx B \approx C \gg D$ pattern; interaction term; the $1.61\times$ probe; contrast with the additive form of Eq.~\eqref{eq:udora}.}
+
+\subsection{Effect of Delivery-Unit Structure}
+\label{sec:res-gof}
+\todo{\gls{ldp} \gof{}=16 versus \gof{}=4 at matched impairment; measured $\tlf$ against the Layer~1 prediction.}
+
+\subsection{Model Calibration and Held-out Prediction}
+\label{sec:res-calibration}
 \begin{table}[t]
   \caption{Fitted \crystal parameters with 95\% bootstrap CIs. \todo{fill}}
   \label{tab:params}
@@ -68,12 +82,12 @@ prediction.}
   \end{tabular}
 \end{table}
 
-\subsection{Hypothesis Tests}
-\todo{H1: interaction probe ($1.61\times$), \gls{clmm} interaction term. H2:
-\gls{ldp} \gof{}=16 versus \gof{}=4 contrast. H3: held-out prediction with
-pooled $\alpha$.}
+\subsection{Comparison with Prior Models}
+\label{sec:res-comparison}
+\todo{Held-out \gls{plcc}/\gls{srocc}/\gls{rmse} of \crystal against a re-fit of Eq.~\eqref{eq:udora} and the linear form of~\cite{li2021qoe} on the same ratings; parameter count versus accuracy.}
 
-\subsection{Derived Thresholds}
+\subsection{Operating Envelopes}
+\label{sec:res-envelopes}
 \todo{Operator-facing: iso-\mos contours in the (delay, loss) plane
 per \gof size, read off Layer~1; keep brief, the full dimensioning
 treatment is deferred.}

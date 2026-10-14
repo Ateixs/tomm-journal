@@ -56,7 +56,8 @@ natural \emph{delivery unit} of a \vpcc stream, the atomic quantity
 that must arrive against a deadline, and it is the structural variable
 on which \crystal turns: a smaller \gof means fewer packets at risk per
 unit but a tighter deadline budget per unit, and which effect dominates
-is an empirical question (H2).
+is an empirical question that the evaluation settles
+(Section~\ref{sec:res-gof}).
 
 Encoding with \gls{tmc2} is slow because it embeds the \gls{hevc} reference
 encoder \gls{hm}; replacing \gls{hm} with x265~\cite{x265} for the geometry and
