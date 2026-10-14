@@ -15,7 +15,8 @@ offers a mechanism rather than a fit.
   \caption{Positioning of \crystal against related work.
   \yes{} = supported, \no{} = not addressed, \partially{} = partial.
   ``Network impairment'': delay and loss as controlled independent
-  variables; ``Reliable \quic'': unmodified, fully reliable \quic
+  variables (\partially{} denotes bandwidth-only adaptation or offline
+  loss injection); ``Reliable \quic'': unmodified, fully reliable \quic
   (\partially{} denotes reliable \gls{tcp} or a modified \quic);
   ``Mechanistic model'': the explanatory variable is derived from
   transport mechanics rather than fitted to delay and loss directly.}
@@ -31,8 +32,12 @@ offers a mechanism rather than a fit.
     \thead{Network\\Impairment} & \thead{QoE\\Model} &
     \thead{Reliable\\\quic} & \thead{Mechanistic\\Model} \\
     \midrule
+    van der Hooft et al.~\cite{vanderhooft2020qomex} & \vpcc  & \yes & \no        & \partially & \no  & \no        & \no \\
+    Li et al.~\cite{li2021qoe}              & \vpcc        & \yes & \yes       & \partially & \yes & \no        & \no \\
+    Subramanyam et al.~\cite{subramanyam2022} & CWI-PCL    & \yes & \yes       & \partially & \no  & \no        & \no \\
     Cox et al.~\cite{Cox2023}               & \vpcc        & \yes & \no        & \no        & \no  & \no        & \no \\
     Nguyen et al.~\cite{nguyen2023}         & \vpcc        & \yes & \partially & \no        & \no  & \no        & \no \\
+    Zhou et al.~\cite{zhou2025tomm}         & \vpcc, \gpcc & \yes & \yes       & \no        & \no  & \no        & \no \\
     Van Damme et al.~\cite{vandamme2024}    & \vpcc        & \yes & \no        & \no        & \yes & \no        & \no \\
     Dumic \& da Silva Cruz~\cite{dumic2023} & \vpcc        & \yes & \no        & \partially & \no  & \no        & \no \\
     Wen et al.~\cite{wen2024}               & --           & \no  & \no        & \yes       & \yes & \no        & \no \\
@@ -120,8 +125,18 @@ yet combines those with a model.
 \subsection{Subjective Quality of Point-Cloud Video}
 \label{sec:rw-subjective}
 
-Subjective studies of volumetric video are dominated by compression.
-Cox et al.~\cite{Cox2023} release VOLVQAD, 7,680 ratings on 376 \vpcc
+Subjective studies of volumetric video are dominated by compression
+and bandwidth. Van der Hooft et al.~\cite{vanderhooft2020qomex} run the
+first subjective evaluation of adaptive \vpcc streaming, with 30
+participants rating pre-rendered viewports on a flat screen under
+bandwidth and buffer variation at a fixed \SI{37}{\milli\second} latency.
+Subramanyam et al.~\cite{subramanyam2022} evaluate tiled user-adaptive
+real-time point-cloud streaming for \gls{vr} remote communication with
+33 users in head-mounted displays, varying bandwidth only. Zhou et
+al.~\cite{zhou2025tomm} collect quality scores and eye-tracking
+attention maps from 40 participants viewing \vpcc, \gpcc and
+CWI-PCL-coded dynamic point clouds with \gls{6dof} in \gls{vr}, without
+a network in the loop. Cox et al.~\cite{Cox2023} release VOLVQAD, 7,680 ratings on 376 \vpcc
 sequences from 120 participants under the Degradation Category Rating
 method, finding texture compression more damaging than geometry and
 documenting the effect of quality-switching patterns; the study used
@@ -173,7 +188,14 @@ a weighted sum of instantaneous quality, quality fluctuation and
 rebuffering, as the reward of a proximal-policy-optimisation controller
 for cooperative volumetric streaming; QV4~\cite{qv424} and Wang et
 al.~\cite{wang2022tmm} follow the same pattern with bitrate/stall
-utilities. These are evaluated in simulation, specify no transport, and
+utilities. Li et al.~\cite{li2021qoe} are the exception that fits a
+model to head-mounted-display ratings: from 34 participants viewing
+\vpcc content on an HTC Vive under simulated bandwidth, they fit a
+linear regression on objective quality, stall time and quality
+switches. Stalls enter as a measured outcome of bandwidth starvation,
+not as a function of delay, loss and \gof structure, so the model
+cannot be evaluated at a new operating point without re-running the
+experiment. These are evaluated in simulation, specify no transport, and
 are calibrated on 2D-video conventions rather than volumetric
 subjective data. The second family maps features to quality without a
 network variable: Van Damme et al.~\cite{vandamme2022,vandamme2024}
