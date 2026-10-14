@@ -1,0 +1,140 @@
+\section{System and Testbed}
+\label{sec:system}
+
+The testbed is the \mosaic architecture of~\cite{mosaic2026}: two
+transport stages, depicted in Figure~\ref{fig:architecture} and
+summarised in Table~\ref{tab:testbed}. Stage~1 delivers encoded \vpcc
+content from the origin server to an edge renderer over \quic, and is
+where controlled impairment is injected. Stage~2 casts the rendered
+stereo frames from the edge renderer to the user's \hmd over a private
+\fiveg standalone network and is held constant across all conditions,
+so that any variation in perceived quality originates in the Stage~1
+transport path.
+
+\begin{figure}[t]
+  \centering
+  \todo{Figure: origin (Caddy HTTP/3) $\to$ Linux \texttt{tc} impairment
+  $\to$ edge renderer (Unity~6, 5G-MAG \gls{v3c} decoder) $\to$ ALVR casting
+  $\to$ Ericsson private 5G SA (RU/BBU/NC) $\to$ Meta Quest~3 with 5G
+  USB dongle. Mark the four slices A--D and the per-\gof telemetry
+  point.}
+  \caption{End-to-end architecture. Network effects of interest are
+  observable at the edge renderer; the casting stage is
+  architecturally transparent.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Stage 1: \vpcc Delivery over Reliable \quic}
+\label{sec:sys-stage1}
+The \vpcc-encoded sequences are hosted on a volumetric server running
+Caddy~v2 (quic-go), which serves per-\gof chunks over \gls{http3} with
+\gls{tls}~1.3. Chunks traverse a Linux Traffic Control chain (TBF + netem)
+that implements the impairment profile of each slice; each slice is
+bound to a distinct \gls{udp} port on the same origin, so all slices are
+served from one Caddy instance without cross-condition interference.
+The edge renderer is a Unity~6 application with a paced
+parallel-download controller (up to three \gofs in flight,
+\SI{200}{\milli\second} prefetch margin, per-\gof wall-clock
+deadline). Arriving chunks are fed to the optimised native \gls{v3c} decoder
+of the 5G-MAG platform~\cite{fivegmag}, integrated through a native
+plugin that bypasses Unity's OpenXR path, and the reconstructed point
+cloud is rendered locally. A \gof that misses its deadline is
+substituted with the last good \gof, which is the mechanism that
+produces freezes and frame skips. Per-\gof telemetry (request time,
+completion time, deadline outcome) is logged for the Layer~1 analysis.
+Loss accounting is exact at the IP layer; no partial-reliability or
+datagram extension is used, so the transport behaviour is that of
+standard \quic~\cite{rfc9000}.
+
+\subsection{Stage 2: Edge-to-\hmd Delivery over Private \fiveg}
+\label{sec:sys-stage2}
+The edge renderer is colocated with the gNodeB of an Ericsson private
+\fiveg standalone network. Rendered stereo frames are cast to the Meta
+Quest~3 with ALVR through an OpenGL$\to$DX11 zero-copy interop pipeline
+routed via SteamVR. Because the Quest~3 has no native 5G radio, a
+commercial 5G USB dongle is adapted to its USB-C port and exposed to
+the headset as a network interface, so the last mile traverses the 5G
+radio access network rather than Wi-Fi~\cite{vquest2026}. Throughput
+on this link is characterised with on-device capture (PCAPdroid) and
+is not a bottleneck for the ALVR stream.
+
+\begin{table}[t]
+  \caption{Testbed components.}
+  \label{tab:testbed}
+  \centering
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Component & Specification \\
+    \midrule
+    Volumetric server & Ubuntu 24.04, Caddy v2.11 (quic-go), HTTP/3, TLS~1.3 AES-128-GCM \\
+    Impairment        & Linux TC (TBF + netem chain), one UDP port per slice \\
+    Edge renderer     & Windows~11, NVIDIA RTX~4070, Unity~6, 5G-MAG V3C native decoder \\
+    VR casting        & ALVR, OpenGL$\to$DX11 interop via SteamVR \\
+    5G network        & Ericsson private 5G SA, colocated edge \\
+    \hmd              & Meta Quest~3 (Snapdragon XR2 Gen~2), adapted 5G USB dongle \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Content and Encoder Configuration}
+\label{sec:sys-content}
+Three sequences from the 8i Voxelized Full Bodies dataset~\cite{8i},
+Category~2 of the \vpcc common test conditions~\cite{vpccctc}, are
+used: Longdress (vox10, $\approx$0.85\,M points/frame), Soldier
+(vox10, $\approx$1.08\,M) and ThaiDancer (vox12, $\approx$3.13\,M), each
+300 frames at \SI{30}{fps}. Sequences are encoded with \gls{tmc2}
+v25~\cite{tmc2} using x265 for the geometry and attribute videos and
+\gls{hm} for the losslessly coded occupancy maps (Table~\ref{tab:encoder}).
+Attribute QPs are chosen per sequence to place all three in the same
+\gls{psnr}$_Y$ band (\SIrange{34}{39}{dB}), so that differences across
+conditions are attributable to transport rather than compression;
+\pcqm is reported per sequence as a stimulus descriptor.
+
+\begin{table}[t]
+  \caption{\vpcc encoder configuration.}
+  \label{tab:encoder}
+  \centering
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Parameter & Value \\
+    \midrule
+    Codec                          & MPEG TMC2 v25.0 \\
+    HEVC (geometry / attribute)    & x265 3.5 via HM-compatible shim \\
+    HEVC (occupancy)               & HM 16.20 + SCM 8.8 \\
+    Geometry QP / occupancy precision & 16 / 2 (fixed) \\
+    Attribute QP (Soldier / Longdress / ThaiDancer) & 18 / 22 / 32 \\
+    Clean-reference profile        & \glsentryshort{ra}, \gof{}=32, I/P/B frames \\
+    Factorial profile              & LDP, \gof{}=4, I/P frames \\
+    Structural contrast            & LDP, \gof{}=16, I/P frames \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Impairment Design}
+\label{sec:sys-impairment}
+\todo{Four slices (Table~\ref{tab:impairments}). Unlike the three-tier
+design of~\cite{mosaic2026}, where each tier paired an impairment
+with a matched encoder configuration, slices B--D here hold the
+encoder fixed at \gls{ldp} \gof{}=4 so that loss, latency and their
+interaction are separable; the \gls{ldp} \gof{}=16 block provides the H2
+contrast. Latency and loss values anchored to 3GPP 5G service
+performance targets~\cite{3gpp22261}.}
+
+\begin{table}[t]
+  \caption{Impairment slices. \todo{fill values}}
+  \label{tab:impairments}
+  \centering
+  \small
+  \begin{tabular}{@{}lllll@{}}
+    \toprule
+    Slice & Loss & Added latency & Encoder & Role \\
+    \midrule
+    A & 0\%        & \SI{0}{\milli\second}      & \glsentryshort{ra}, \gof{}=32  & Clean reference ($\qc$) \\
+    B & \todo{x}\% & \SI{0}{\milli\second}      & LDP, \gof{}=4  & Loss only \\
+    C & 0\%        & \todo{y}\,\si{\milli\second} & LDP, \gof{}=4 & Latency only \\
+    D & \todo{x}\% & \todo{y}\,\si{\milli\second} & LDP, \gof{}=4 & Interaction \\
+    \bottomrule
+  \end{tabular}
+\end{table}

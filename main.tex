@@ -1,0 +1,214 @@
+%% =====================================================================
+%%  CRYSTAL -- ACM Transactions on Multimedia Computing, Communications,
+%%  and Applications (TOMM) manuscript
+%%
+%%  Build: pdflatex -> bibtex -> pdflatex -> pdflatex  (Overleaf default)
+%%
+%%  MODE SWITCH -- pick ONE of the two lines below:
+%%    review,anonymous  : double-anonymous submission PDF (line numbers,
+%%                        authors hidden, "our prior work" must be 3rd person)
+%%    (none)            : camera-ready / author preprint
+%% =====================================================================
+\documentclass[acmsmall,review,anonymous,screen]{acmart}
+%\documentclass[acmsmall,screen]{acmart}
+
+%% ------------------------------------------------------------------
+%% ACM journal metadata (fill in after acceptance; harmless while blank)
+%% ------------------------------------------------------------------
+\acmJournal{TOMM}
+\acmYear{2026}
+\acmVolume{0}
+\acmNumber{0}
+\acmArticle{0}
+\acmMonth{0}
+\acmDOI{XXXXXXX.XXXXXXX}
+\copyrightyear{2026}
+\setcopyright{acmlicensed}
+
+%% ------------------------------------------------------------------
+%% Packages -- acmart already loads amsmath, amssymb, graphicx,
+%% hyperref, booktabs, natbib, xcolor, microtype, caption, subcaption?
+%% (subcaption is NOT loaded; added below)
+%% ------------------------------------------------------------------
+\usepackage{subcaption}
+\usepackage{siunitx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xspace}
+\usepackage[inline]{enumitem}
+\usepackage{orcidlink}
+\usepackage[acronym,nomain,nopostdot,nogroupskip,toc=false]{glossaries}
+\input{acronyms}
+\makenoidxglossaries
+
+\graphicspath{{figures/}}
+\sisetup{detect-all,per-mode=symbol,range-phrase=--,range-units=single}
+
+%% ------------------------------------------------------------------
+%% Macros: keep terminology consistent across the whole manuscript.
+%% Acronyms route through glossaries, so first use expands automatically.
+%% ------------------------------------------------------------------
+\newcommand{\crystal}{\textsc{Crystal}\xspace}
+\newcommand{\mosaic}{\textsc{Mosaic}\xspace}
+\newcommand{\vquest}{\textsc{Vquest}\xspace}
+\newcommand{\vpcc}{\gls{vpcc}\xspace}
+\newcommand{\gpcc}{\gls{gpcc}\xspace}
+\newcommand{\quic}{QUIC\xspace}   % RFC 9000: a name, not an acronym
+\newcommand{\pcqm}{\gls{pcqm}\xspace}
+\newcommand{\qoe}{\gls{qoe}\xspace}
+\newcommand{\mos}{\gls{mos}\xspace}
+\newcommand{\hmd}{\gls{hmd}\xspace}
+\newcommand{\gof}{\gls{gof}\xspace}
+\newcommand{\gofs}{\glspl{gof}\xspace}
+\newcommand{\fiveg}{\gls{5g}\xspace}
+\newcommand{\threedgs}{\gls{3dgs}\xspace}
+\newcommand{\plr}{\mathrm{PLR}}
+\newcommand{\tlf}{\psi}                      % temporal loss fraction
+\newcommand{\qc}{\widetilde{Q}_c}            % per-content clean ceiling
+% Math-safe short forms (glossaries inside math is fragile)
+\newcommand{\mosm}{\mathrm{MOS}}
+
+% The CRYSTAL model, in one place (edit here, propagate everywhere)
+% Layer 2 (perceptual): one free parameter alpha, per-content ceiling Qc
+\newcommand{\crystalmodel}{%
+  \widehat{\mosm} = 1 + 4\,\qc\, e^{-\alpha \tlf}}
+% Layer 1 (transport): temporal loss fraction from playback rate
+\newcommand{\crystallayerone}{%
+  \tlf = 1 - \frac{T_{\mathrm{rendered}}}{T_{\mathrm{wallclock}}}}
+
+% Editorial helpers (remove before submission)
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\note}[1]{\textcolor{blue}{[NOTE: #1]}}
+
+% Anonymisation. acmart provides \anon[review]{final}, which paints the
+% review text orange -- good for short placeholders. For whole
+% paragraphs that must read naturally in both modes, use \blind:
+\makeatletter
+\newcommand{\blind}[2]{\if@ACM@anonymous #1\else #2\fi}
+\makeatother
+
+%% ------------------------------------------------------------------
+%% Title / authors
+%% ------------------------------------------------------------------
+\title[CRYSTAL: A Mechanistic QoE Model for V-PCC over Reliable QUIC]{%
+  \crystal: A Mechanistic Two-Layer Quality-of-Experience Model for
+  V-PCC Volumetric Video Streaming over Reliable QUIC on Private 5G}
+
+\author{Alan Teixeira da Silva}
+\orcid{0000-0000-0000-0000}
+\email{a.silva@unicamp.br}
+\affiliation{%
+  \institution{School of Electrical and Computer Engineering (FEEC), University of Campinas (UNICAMP)}
+  \city{Campinas}
+  \state{SP}
+  \country{Brazil}}
+
+\author{Vanessa Testoni}
+\orcid{0000-0000-0000-0000}
+\email{vanessa@unicamp.br}
+\affiliation{%
+  \institution{FEEC, University of Campinas (UNICAMP)}
+  \city{Campinas}
+  \state{SP}
+  \country{Brazil}}
+
+\author{Christian Esteve Rothenberg}
+\orcid{0000-0000-0000-0000}
+\email{chesteve@unicamp.br}
+\affiliation{%
+  \institution{FEEC, University of Campinas (UNICAMP)}
+  \city{Campinas}
+  \state{SP}
+  \country{Brazil}}
+
+\renewcommand{\shortauthors}{Teixeira da Silva et al.}
+
+%% ------------------------------------------------------------------
+%% Abstract (structured: problem, gap, approach, result, claim)
+%% ------------------------------------------------------------------
+\begin{abstract}
+\todo{Problem: volumetric video over private \fiveg to untethered
+\glspl{hmd}; production \quic is reliable, so loss never reaches the decoder
+-- it reaches the clock.}
+\todo{Gap: existing network-aware QoE models for volumetric media
+(Udora et al.) fit five coefficients per quality level on reliable
+transport and generalise poorly (held-out PLCC 0.57--0.66); no model
+explains \emph{why} delay and loss degrade QoE.}
+\todo{Approach: \crystal, a two-layer model. Layer~1 derives the temporal
+loss fraction $\tlf$ from transport parameters (slack, RTT, recovery
+cost, \gof structure) with no perceptual free parameter; Layer~2 maps
+$\tlf$ to MOS with one parameter, $\crystalmodel$.}
+\todo{Result: ITU-T P.910 ACR study ($N=50$), $2\times2$ factorial over
+loss and latency; separability refuted ($1.61\times$ interaction);
+\gof size, not codec identity, governs resilience; single $\alpha$
+predicts held-out conditions.}
+\todo{Claim: under reliable transport, latency and loss act exclusively
+through $\tlf$, mediated by the codec's delivery-unit structure.}
+\end{abstract}
+
+%% ------------------------------------------------------------------
+%% CCS concepts -- generate at https://dl.acm.org/ccs and paste
+%% ------------------------------------------------------------------
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002951.10003227.10003251.10003256</concept_id>
+       <concept_desc>Information systems~Multimedia streaming</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10003120.10003121.10003124.10010870</concept_id>
+       <concept_desc>Human-centered computing~Virtual reality</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10003033.10003079.10011704</concept_id>
+       <concept_desc>Networks~Network measurement</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Information systems~Multimedia streaming}
+\ccsdesc[300]{Human-centered computing~Virtual reality}
+\ccsdesc[300]{Networks~Network measurement}
+
+\keywords{volumetric video, point cloud streaming, quality of experience,
+V-PCC, QUIC, HTTP/3, private 5G, subjective assessment, virtual reality}
+
+%% ------------------------------------------------------------------
+\begin{document}
+\maketitle
+\glsresetall
+
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-related-work}
+\input{sections/04-crystal-model}
+\input{sections/05-system}
+\input{sections/06-methodology}
+\input{sections/07-results}
+\input{sections/08-discussion}
+\input{sections/09-conclusion}
+
+%% ------------------------------------------------------------------
+\begin{acks}
+\anon[Acknowledgements withheld for review.]{%
+This work was supported by the FAPESP Engineering Research Center
+SMARTNESS (Proc.\ 2021/00199-8). \todo{Add CAPES/CNPq/Ericsson
+acknowledgements as applicable.}
+}
+\end{acks}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\appendix
+\input{sections/A-appendix}
+
+\end{document}

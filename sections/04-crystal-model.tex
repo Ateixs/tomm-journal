@@ -1,0 +1,81 @@
+\section{The \crystal Model}
+\label{sec:model}
+
+\subsection{Scope and Rated Attribute}
+\label{sec:model-scope}
+\crystal models the \emph{network-attributable} component of \qoe for
+\vpcc streaming over reliable \quic: the degradation in perceived
+temporal smoothness caused by delay and loss, relative to an
+impairment-free presentation of the same content. It does not model
+compression fidelity, which is fixed per sequence and reported through
+\pcqm as a stimulus descriptor, and it does not model overall MOS as a
+combination of fidelity and smoothness. The rated attribute in the
+subjective study is smoothness of playback.
+
+\subsection{Layer 1: Transport Model}
+\label{sec:model-layer1}
+\todo{Derive the temporal loss fraction. Define the delivery unit (the
+\gof for \vpcc), its size $G$ in frames, the playout deadline, the
+delivery slack $S$ (time between \gof completion and its deadline under
+no impairment), the per-loss recovery cost $R$ from
+Eq.~\eqref{eq:pto} (at least one \gls{rtt}; one \gls{pto} for tail losses), and
+the probability that at least one of the \gof's packets is lost. Show
+that a \gof stalls when recovered delay exceeds $S$, and that the
+expected stall duration accumulates into}
+\begin{equation}
+  \crystallayerone,
+  \label{eq:tlf}
+\end{equation}
+\todo{with $\tlf = f(S, \mathrm{RTT}, R, G, \plr)$ containing no
+perceptual free parameter. State the two consequences that become H1
+and H2: (i) delay and loss enter $\tlf$ jointly through $S$ and $R$,
+so their effects on \qoe cannot be additive; (ii) $G$ changes both the
+exposure (more packets per \gof) and the slack, so resilience is
+governed by \gof size rather than by codec identity.}
+
+\subsection{Layer 2: Perceptual Model}
+\label{sec:model-layer2}
+\begin{equation}
+  \crystalmodel
+  \label{eq:crystal}
+\end{equation}
+\todo{Define $\qc = (\mos_{A,c} - 1)/4$, the clean-reference ceiling
+measured from Slice~A ratings of content $c$; $\alpha$ is the single
+perceptual parameter. Justify the exponential kernel from the IQX
+hypothesis~\cite{fiedler2010}. Boundary behaviour:
+$\widehat{\mos} \to 1 + 4\qc$ as $\tlf \to 0$ and $\to 1$ as
+$\tlf \to \infty$. Prediction: the three $\qc$ are $\approx 1$ and
+statistically indistinguishable, collapsing the model to
+$\mos = 1 + 4e^{-\alpha\tlf}$.}
+
+\subsection{Hypotheses}
+\label{sec:model-hyp}
+\begin{description}[leftmargin=*]
+  \item[H1 (Separability, the null).] Latency and loss effects on
+        \mos are additive, as assumed by Eq.~\eqref{eq:udora}.
+        \crystal predicts the opposite: an interaction, because both
+        act through $\tlf$. Pre-registered pattern across the four
+        slices: $A \approx B \approx C \gg D$.
+  \item[H2 (Structure governs resilience).] For fixed delay and loss,
+        $\tlf$, and hence \mos, depends on \gof size $G$, not on codec
+        identity or quality level. \todo{State the direction predicted
+        by Layer~1 for \gls{ldp} \gof{}=4 versus \gof{}=16.}
+  \item[H3 (One parameter generalises).] A single $\alpha$ fitted on
+        one subset of conditions predicts held-out conditions without
+        refitting, at a held-out \gls{plcc} exceeding the 0.57--0.66 reported
+        for the five-coefficient model of Eq.~\eqref{eq:udora}.
+\end{description}
+
+\subsection{Parameter Estimation}
+\label{sec:model-fit}
+\todo{$\alpha$ by non-linear least squares on per-slice \mos; bootstrap
+confidence intervals; \gls{clmm} with
+participant and content as random effects for the hypothesis tests;
+held-out evaluation by leaving one slice or one content out.}
+
+\subsection{Prediction for Other Representations}
+\label{sec:model-predict}
+\todo{Layer~1 with $G = 1$ (no delivery-unit coupling): Udora's
+uncompressed per-frame streaming as an external check. Extension to
+\threedgs, whose primitives are independently decodable: state what
+$\tlf$ predicts and what observation would falsify it.}

@@ -1,0 +1,166 @@
+\section{Background}
+\label{sec:background}
+
+\subsection{Volumetric Media and Point Clouds}
+\label{sec:bg-volumetric}
+
+Volumetric media records the properties of a three-dimensional space
+rather than a projection of it, so that a viewer may change viewpoint
+with six degrees of freedom: translation along, and rotation about, the
+three spatial axes. This freedom of viewpoint is what distinguishes
+volumetric content from 360\textdegree{} video and is the basis of
+presence in virtual and augmented reality~\cite{qualinet}. Among the
+representations in use, the point cloud is the most direct: a set of
+unordered 3D points, each carrying attributes such as RGB colour, as
+produced by depth cameras and LiDAR or synthesised from multi-view
+capture. Dense dynamic point clouds of a human figure, such as the
+\gls{mpeg}/8i sequences used throughout this work~\cite{8i}, contain on the
+order of $10^6$ points per frame at 30 frames per second and require
+gigabits per second uncompressed~\cite{pcstreaming21}.
+
+\subsection{Point Cloud Compression: \vpcc}
+\label{sec:bg-codecs}
+
+\gls{mpeg} addresses the volume of dynamic point-cloud data through the
+\gls{v3c} standard, ISO/IEC
+23090-5~\cite{v3c}, of which Video-based Point Cloud Compression
+(\vpcc) is the principal component~\cite{vpccgraziosi}. Where
+geometry-based codecs such as \gls{mpeg} \gpcc operate directly on the 3D
+structure, \vpcc takes a projection route. The point cloud is
+segmented into connected 3D \emph{patches}; each patch is projected
+onto a 2D plane; and the projections are packed into an \emph{atlas}
+that is encoded as three conventional video streams: a geometry map
+carrying depth, an attribute map carrying colour, and a losslessly
+coded occupancy map marking the valid pixels. The decoder reverses the
+process, back-projecting pixels into 3D using the atlas metadata.
+Because the maps are coded by an ordinary 2D codec, \gls{hevc}~\cite{hevc}
+in the reference software \gls{tmc2}~\cite{tmc2}, \vpcc is codec-agnostic
+and hardware-friendly, and it inherits the video codec's prediction
+structure.
+
+That inheritance is what matters for transport. Frames are coded in
+groups of frames (\gofs) under one of the \gls{hevc} common test
+configurations~\cite{hmctc}. The \gls{ra}
+configuration prescribed by the \vpcc common test
+conditions~\cite{vpccctc} uses a hierarchical structure with I-, P-
+and B-frames and a \gof of 32 frames, maximising temporal compression
+at the cost of long inter-frame dependency chains; it suits stable
+networks. The \gls{ldp} configuration uses only I- and
+P-frames and is recommended for real-time and interactive use; with
+\gof sizes of 16 or 4 frames it shortens the dependency chain and
+raises bitstream resilience at the cost of compression efficiency.
+Whatever the configuration, a \gof must be received in full before
+any frame in it can be reconstructed, and in a streaming deployment
+each \gof carries a presentation deadline. The \gof is therefore the
+natural \emph{delivery unit} of a \vpcc stream, the atomic quantity
+that must arrive against a deadline, and it is the structural variable
+on which \crystal turns: a smaller \gof means fewer packets at risk per
+unit but a tighter deadline budget per unit, and which effect dominates
+is an empirical question (H2).
+
+Encoding with \gls{tmc2} is slow because it embeds the \gls{hevc} reference
+encoder \gls{hm}; replacing \gls{hm} with x265~\cite{x265} for the geometry and
+attribute videos, through a command-line shim that preserves \gls{hm}'s
+interface, makes content preparation practical while leaving the
+bitstream standard-compliant~\cite{mosaic2026}. Real-time decoding on
+the edge uses the optimised native decoder of the 5G-MAG \gls{v3c}
+platform~\cite{fivegmag}. Attribute quantisation dominates bitstream
+composition for textured human sequences: for the Longdress sequence,
+attribute coding accounts for roughly 92\% of the encoded size, with
+geometry near 6\% and occupancy near 1\%~\cite{mosaic2026}, which
+bears on how a stall in delivery is perceived.
+
+\subsection{Quality Assessment of Point Clouds}
+\label{sec:bg-qa}
+
+\paragraph{Objective metrics.}
+Objective metrics are classified by the reference they require
+(full-, reduced- or no-reference) and by whether they operate on the 3D
+model or on 2D projections of it. Model-based metrics are independent
+of rendering and viewpoint and generalise well across distortions;
+projection-based metrics capture rendering effects but depend on camera
+selection and pooling. \pcqm~\cite{pcqm}, a full-reference model-based
+metric built on local statistics of luminance, chrominance and hue, is
+among the most stable predictors of subjective quality across codecs in
+recent benchmarks~\cite{ak2024basics}. In this work \pcqm is used only as
+a \emph{stimulus descriptor}, to report the intrinsic fidelity of each
+encoded sequence; it does not enter the model, because the perceptual
+attribute rated in our study is temporal smoothness, on which spatial
+fidelity has no bearing.
+
+\paragraph{Subjective assessment.}
+Subjective studies provide the ground truth that objective metrics
+approximate. For volumetric content the design space is wider than for
+2D video: the content may be inspected passively along a fixed camera
+path, which is reproducible, or interactively, which is realistic but
+introduces inter-viewer variability; it may be shown on a monitor or in
+a head-mounted display; and the rated attribute must be stated
+explicitly, since a \gls{6dof} scene can be judged on fidelity, smoothness,
+presence or comfort~\cite{Alexiou2023}. Two ITU recommendations govern
+the protocol. ITU-R BT.500~\cite{bt500} is the broadcast standard: a
+strictly controlled laboratory, double-stimulus methods (\gls{dsis}, \gls{dscqs}) in
+which the assessor compares a reference with a processed version, and
+an impairment scale. ITU-T P.910~\cite{p910} targets multimedia
+applications on any device: single-stimulus methods, in particular
+\gls{acr} on a five-point scale from ``Bad'' to
+``Excellent'', and flexibility over the viewing environment. \gls{acr} matches
+how a viewer consumes a stream, needs no reference presentation inside
+the headset, and is the protocol adopted here, with BT.500's observer
+screening retained. Neither recommendation yet addresses immersive
+volumetric content specifically; the methodology of
+Section~\ref{sec:method} follows P.910 and the emerging practice for
+point-cloud video~\cite{nguyen2023,Cox2023}.
+
+\subsection{Transport: From \gls{tcp} to Reliable \quic}
+\label{sec:bg-quic}
+
+Media delivery over HTTP/1.1 and HTTP/2 is bounded by their \gls{tcp}
+foundation: a single lost segment blocks delivery of everything behind
+it (head-of-line blocking), connection setup costs two to three
+round-trips, and slow start limits initial throughput. \quic~\cite{rfc9000}
+rebuilds the transport over \gls{udp} in user space. It integrates \gls{tls}~1.3
+into a 1-\gls{rtt} (or 0-\gls{rtt} on resumption) handshake, multiplexes
+independent streams so that loss on one stream does not block another,
+identifies connections by an ID that survives address changes, and is
+the substrate of \gls{http3}. By mid-2025 roughly a third of public web
+sites served \gls{http3}, so \quic is the transport a deployed volumetric
+service would most plausibly use.
+
+Two properties of standard \quic determine how network impairment
+reaches a volumetric decoder. First, \quic is \emph{reliable}: lost
+packets are detected and retransmitted, and stream data is delivered
+in order. Loss is detected either by acknowledgement (a packet is
+declared lost when later packets are acknowledged beyond a reordering
+threshold, typically three) or by a \gls{pto} derived from
+round-trip estimates,
+\begin{equation}
+  \mathrm{\gls{pto}} = \mathrm{sRTT} + \max(4\,\mathrm{\gls{rtt}}_{\mathrm{var}},
+  k_{\mathrm{granularity}}) + \mathrm{max\_ack\_delay},
+  \label{eq:pto}
+\end{equation}
+so that the recovery cost of a loss is at least one additional \gls{rtt} and,
+when a tail packet is lost, a full \gls{pto}. Second, independence between
+streams does not help a \vpcc \gof: all packets of a \gof must arrive
+before the \gof can be decoded, so a single late packet delays the whole
+delivery unit. The combination converts packet loss into
+\emph{delay}, and delay into \emph{stalls} whenever the recovered \gof
+misses its playout deadline. Packet-level measurement on the testbed
+of Section~\ref{sec:system} shows the two impairments leave distinct
+signatures on the per-request delivery-time distribution: added
+latency shifts the whole distribution, while loss leaves the median
+comparatively intact and expands the tail, the P95/P50 ratio rising
+from 1.23 to 4.52 at 5\% loss, because retransmission delay compounds
+with congestion-window reduction that persists into subsequent
+transfers~\cite{vquest2026}. For \vpcc, the per-\gof deadline-miss
+rate observed at the renderer correlates with subjective quality
+($\rho_{\mathrm{Spearman}} = -0.34$, $p < 10^{-3}$) but only
+partially, because a missed \gof of 4 frames and a missed \gof of 16
+frames disrupt different durations of content~\cite{mosaic2026};
+this is precisely the gap between a network observable and a
+perceptual variable that $\tlf$ is defined to close. Equation~\eqref{eq:pto} and the \gof size
+are the two quantities from which Layer~1 of \crystal derives the
+temporal loss fraction. Partially reliable \quic
+variants~\cite{ravuri2023,haseeb2025} and datagram-based transports
+such as \gls{webrtc} change this behaviour by allowing stale data to be
+dropped; they are discussed in Section~\ref{sec:related} but are
+outside the regime modelled here.

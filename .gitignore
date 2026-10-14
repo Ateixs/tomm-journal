@@ -1,0 +1,25 @@
+# LaTeX build artefacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.glsdefs
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.nav
+*.snm
+*.vrb
+main.pdf
+# local toolchain copies (Overleaf ships these)
+acmart.cls
+ACM-Reference-Format.bst
+.DS_Store

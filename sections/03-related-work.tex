@@ -1,0 +1,278 @@
+\section{Related Work}
+\label{sec:related}
+
+Prior work bears on \crystal along four lines: the requirements and
+surveys of immersive communication, systems and transports for
+volumetric streaming, subjective studies of point-cloud video, and
+parametric \qoe models. Table~\ref{tab:positioning} positions this
+article against the closest studies on the axes that define its
+contribution: whether a \qoe model is fitted to subjective scores,
+whether network delay and loss are the independent variables, whether
+the transport is unmodified reliable \quic, and whether the model
+offers a mechanism rather than a fit.
+
+\subsection{Immersive Media Streaming for \gls{vr}}
+\label{sec:rw-immersive}
+
+Surveys of immersive media delivery agree on the gap this article
+addresses while leaving it open. Van der Hooft et al.~\cite{Immersivevideo}
+and Viola and Cesar~\cite{Viola2023} give the end-to-end tutorial view
+of volumetric delivery, from capture to \gls{6dof} rendering in the
+\gls{hmd}, and identify \gls{qoe} modelling under network impairment as
+unresolved. Shen et al.~\cite{shen2023toward} argue that packet loss,
+delay variation and bandwidth limits produce cascading effects on
+immersive \gls{qoe} that 2D video metrics cannot capture, and call for
+models that connect network conditions to perception. Garcia et
+al.~\cite{garcia22} classify volumetric telepresence under ``Meet'' and
+``Visit'' archetypes and find that published evaluations combine
+presence questionnaires and technical metrics without a standard
+framework. Liu et al.~\cite{pcstreaming21} and Enenche et
+al.~\cite{metaverseroad25} survey point-cloud streaming and state
+plainly that measuring its \gls{qoe} ``is still in its infancy''. None
+of these supplies a model that predicts a subjective score from
+network conditions for a specific codec and transport.
+
+\subsection{\vpcc Streaming Systems and Transport}
+\label{sec:rw-systems}
+
+Systems work on \vpcc delivery attacks bandwidth and adaptation and
+evaluates objectively. Rudolph et al.~\cite{rudolph2025rabbit}
+transcode \vpcc streams in real time by re-encoding only the
+underlying video sub-streams, evaluated through rate--distortion and
+transcoding latency; QV4~\cite{qv424} adds viewpoint-aware tiling to
+\vpcc by exploiting the encoder's intermediate outputs, with a \qoe
+model trained on VOLVQAD ratings and a \gls{6dof} movement model, evaluated
+by simulation on bandwidth adaptation rather than delay or loss.
+Codec-agnostic systems follow the same pattern: Hermes~\cite{hermes}
+exploits implicit inter-frame correlation on commodity phones over LTE
+and Wi-Fi traces; YuZu~\cite{yuzu} applies 3D super-resolution and
+validates with more than 1,400 remote participants on monitors; P2VS~\cite{p2vs}
+achieves codec-independent progressive streaming in simulation; De
+Fré et al.~\cite{mathias24} deliver one-to-many \gls{webrtc} conferencing
+with multiple-description coding, reporting \gls{vmaf}; Suthar et
+al.~\cite{codec} switch between codecs for rate adaptation on
+simulated traces. In all of these the encoder configuration, in
+particular the \gof length, is held fixed, and none exposes the
+content to a real transport under controlled impairment with
+subjective validation in a head-mounted display.
+
+On transport, Ravuri et al.~\cite{ravuri2023} integrate \gls{dash} with
+partially reliable \quic for \vpcc, deciding per object whether to
+deliver reliably, and show 46\% higher throughput and 33\% fewer
+playout interruptions than reliable \quic at 5\% Gilbert--Elliott
+loss on 5G traces, with a headless player. Octavius~\cite{haseeb2025}
+combines adaptive encoding with a mixed-reliability \quic protocol;
+Freeman et al.~\cite{moq2025} obtain implicit server-side adaptation
+from delivery timeouts in Media-over-\quic; Thomas and
+Xylomenos~\cite{thomas2025} demonstrate ultra-low-latency point-cloud
+streaming on a real 5G testbed with forward error correction but
+without \quic; Fiorina et al.~\cite{fiorina2025} estimate \qoe for
+multicast point-cloud streaming over 5G from an objective model only.
+Each either modifies the fully reliable protocol that production
+stacks ship~\cite{rfc9000} or omits subjective evaluation. That
+reliable \quic turns loss into delay, and delay into \gof stalls, is
+noted qualitatively in several of these works, but its perceptual cost
+has not been quantified. Hong et al.~\cite{hong2026latency} decompose
+the end-to-end latency of a real-time volumetric pipeline across
+application, transport and network layers, an objective complement to
+the subjective calibration here. To the best of our knowledge, before
+\cite{mosaic2026} no study combined real \vpcc transmission over
+\quic, playback in a \gls{vr} headset, controlled impairment injection on a
+real link, 5G delivery and a standardised subjective study; no study
+yet combines those with a model.
+
+\subsection{Subjective Quality of Point-Cloud Video}
+\label{sec:rw-subjective}
+
+Subjective studies of volumetric video are dominated by compression.
+Cox et al.~\cite{Cox2023} release VOLVQAD, 7,680 ratings on 376 \vpcc
+sequences from 120 participants under the Degradation Category Rating
+method, finding texture compression more damaging than geometry and
+documenting the effect of quality-switching patterns; the study used
+2D displays and no network impairment. Nguyen et al.~\cite{nguyen2023}
+characterise \qoe and immersion of \vpcc point clouds in augmented
+reality on the HoloLens~2 with 32 participants across quantisation,
+quality switches, viewing distance and content, without a stated
+transport or network variable. Alexiou et al.~\cite{Alexiou2023} survey
+the methodology; Ak et al.~\cite{ak2024basics} benchmark objective
+metrics on a broad static corpus, where \pcqm~\cite{pcqm} is among the
+most stable across codecs. Liu et al.~\cite{liu2021tip} fit a
+reduced-reference perceptual model to \vpcc quantisation parameters.
+
+Network impairment as the independent variable is rare, and where it
+appears it is applied at the wrong layer for the question asked here.
+Dumic and da Silva Cruz~\cite{dumic2023} inject
+\SIrange{0.5}{2}{\percent} packet loss into \vpcc sub-bitstreams in
+MATLAB before decoding and report MOS drops exceeding one scale unit
+at \SI{0.5}{\percent}, with geometry and occupancy losses far more
+damaging than attribute losses; the content is shown as 2D projected
+video on a conventional display. Wu et al.~\cite{wu2021nossdav} study
+distortion and concealment for dynamic point clouds under loss. Both
+remove packets from the bitstream and ask the decoder to cope. Under
+reliable \quic the decoder never sees an incomplete bitstream; the
+impairment is temporal, and neither study captures the retransmission
+dynamics that real loss elicits nor the stereoscopic, head-tracked
+viewing that defines immersive \gls{vr}. The only subjective study of
+volumetric media under delay \emph{and} loss on reliable transport in
+head-mounted displays, prior to~\cite{mosaic2026}, is that of Udora et
+al., discussed next.
+
+\subsection{Parametric \qoe Models for Volumetric Media}
+\label{sec:rw-models}
+
+The exponential form of \crystal's perceptual layer descends from the
+IQX hypothesis of Fiedler et al.~\cite{fiedler2010}, which derives
+$\mathrm{QoE} = a\,e^{-b x} + c$ for a single impairment $x$ from the
+assumption that the sensitivity of \qoe to an impairment is
+proportional to the current \qoe level; Reichl et al.~\cite{reichl2010}
+argue for a logarithmic law under the Weber--Fechner interpretation, and
+the two agree in the operating region relevant here. Both are
+single-impairment, content-agnostic descriptions of a QoS--\qoe
+relationship~\cite{qoemodels}.
+
+For volumetric media, three families of model exist. The first embeds
+a \qoe formula inside an optimiser. Wen et al.~\cite{wen2024} define
+$\mathrm{QoE}_k(t) = Q_k(t) - \alpha_1\,\Delta Q_k(t) - \alpha_2\,B_k(t)$,
+a weighted sum of instantaneous quality, quality fluctuation and
+rebuffering, as the reward of a proximal-policy-optimisation controller
+for cooperative volumetric streaming; QV4~\cite{qv424} and Wang et
+al.~\cite{wang2022tmm} follow the same pattern with bitrate/stall
+utilities. These are evaluated in simulation, specify no transport, and
+are calibrated on 2D-video conventions rather than volumetric
+subjective data. The second family maps features to quality without a
+network variable: Van Damme et al.~\cite{vandamme2022,vandamme2024}
+build a clustering-based psychometric no-reference model for
+\vpcc video, a sigmoidal mapping of image features trained against
+\gls{vmaf} at video, \gof and frame granularity, on an emulated network with
+latency fixed at \SI{37}{\milli\second}; Zhang et al.~\cite{zhang2019towards}
+use a Mamdani fuzzy inference system over subjectively rated content,
+hardware, environment and interaction factors for the HoloLens.
+
+The third family, and the direct baseline for this work, is the
+network-aware regression of Udora et al.~\cite{qoeholographic,
+udora2024quality}, developed in the SPIRIT project for live volumetric
+telepresence and extended in Udora's doctoral
+thesis~\cite{udora2025thesis}. From a double-stimulus study with 25
+participants in head-mounted displays, they fit
+\begin{equation}
+  \mathrm{QoE} = a\,e^{b D} + c\,\plr + d,
+  \label{eq:udora}
+\end{equation}
+with coefficients $(a,b,c,d)$ re-estimated for each of three point-cloud
+density levels, producing a MOS on the 1--5 scale. Three features of
+this work make it the right comparator. Its transport is reliable
+(\gls{tcp}) so its data carry the same loss-to-latency signature as ours;
+\quic is listed as future work. Its functional form is additive in
+delay and loss, which is a separability assumption identical to our
+H1. And its held-out performance is modest, with \gls{plcc} between 0.57 and
+0.66 across quality levels, which is what one expects when five free
+coefficients absorb a mechanism rather than express it. Udora's
+uncompressed per-frame streaming also provides an external reference
+point for the case of no \gof coupling, where a lost packet delays only
+one frame.
+
+\crystal differs on each count. It replaces the five coefficients with
+one perceptual parameter and a measured ceiling; it derives the
+explanatory variable $\tlf$ from transport quantities instead of
+fitting delay and loss directly; it treats separability as a hypothesis
+to be tested and finds it false; and it makes \gof size, not codec
+identity or quality level, the structural variable. Beyond these
+specific models, there is no standardised \qoe metric for volumetric
+content; most proposals adapt 2D metrics or rely on raw subjective
+scores, and their computational cost varies widely, which limits
+real-time deployment~\cite{Immersivevideo}.
+
+\subsection{Gaussian Splatting}
+\label{sec:rw-3dgs}
+
+3D Gaussian Splatting~\cite{kerbl2023gaussian} has acquired a streaming
+literature of its own: layered \gls{dash} delivery~\cite{sun2025lts},
+in-network assistance~\cite{krishna2025netsplat}, rate adaptation over
+dynamic networks~\cite{wang2026tcsvt}, motion-residual
+prediction~\cite{naqvi2026cubegs} and fine-granular scalable
+bitstreams~\cite{talha2026splatstream}. All evaluate with objective
+rendering metrics; no subjective study of splat streaming under network
+impairment exists. Because each Gaussian primitive is independently
+decodable, a splat stream has no \gof coupling in the sense of
+Section~\ref{sec:bg-codecs}, and \crystal's Layer~1 makes a specific
+prediction about its resilience (Section~\ref{sec:model-predict}).
+That prediction is left for future work but stated so that the model
+can be refuted by it.
+
+\subsection{Relation to the Authors' Prior Work}
+\label{sec:rw-prior}
+
+\blind{%
+Two conference papers precede this article. The
+first~\cite{mosaic2026} introduced an end-to-end architecture in which
+\vpcc content travels over \quic from an \gls{http3} origin to an edge
+renderer under controlled impairment and the rendered stereo frames
+reach a Meta Quest~3 over a private 5G standalone network, and
+reported a three-tier subjective study ($N=20$) in which each network
+tier was paired with a matched encoder configuration (\gls{ra} \gof{}=32;
+\gls{ldp} \gof{}=16; \gls{ldp} \gof{}=4). Its central observation, that the tier
+with lower loss but \gof{}=4 scored lower MOS than the tier with higher
+loss and \gof{}=16, motivates H2, but the paired design could not
+separate impairment from configuration. The second~\cite{vquest2026}
+characterised the \quic transport signatures of latency and loss for a
+frame-independent codec and measured the corresponding perceptual
+thresholds; it serves here as the no-coupling reference point
+(Section~\ref{sec:model-predict}). Earlier testbed descriptions
+appeared as demonstrations~\cite{bestdemo25,nfvsdn24}. This article
+contributes what neither did: a mechanistic two-layer model, a full
+factorial design that decouples impairment from encoder configuration,
+a pre-registered test of separability and of \gof structure, and the
+subjective calibration of a single perceptual parameter.%
+}{%
+Two conference papers by the authors precede this article.
+\mosaic~\cite{mosaic2026} introduced the end-to-end architecture in
+which \vpcc content travels over \quic from an \gls{http3} origin to an edge
+renderer under controlled impairment and the rendered stereo frames
+reach a Meta Quest~3 over a private 5G standalone network, and
+reported a three-tier subjective study ($N=20$) in which each network
+tier was paired with a matched encoder configuration (\gls{ra} \gof{}=32;
+\gls{ldp} \gof{}=16; \gls{ldp} \gof{}=4). Its central observation, that the tier
+with lower loss but \gof{}=4 scored lower MOS than the tier with higher
+loss and \gof{}=16, motivates H2, but the paired design could not
+separate impairment from configuration. \vquest~\cite{vquest2026}
+characterised the \quic transport signatures of latency and loss for a
+frame-independent codec and measured the corresponding perceptual
+thresholds; it serves here as the no-coupling reference point
+(Section~\ref{sec:model-predict}). Earlier testbed descriptions
+appeared as demonstrations~\cite{bestdemo25,nfvsdn24}. This article
+contributes what neither did: a mechanistic two-layer model, a full
+factorial design that decouples impairment from encoder configuration,
+a pre-registered test of separability and of \gof structure, and the
+subjective calibration of a single perceptual parameter.%
+}
+
+\begin{table}[t]
+  \caption{Positioning of \crystal against the closest prior work.
+  ``Subj.'': subjective study; ``HMD'': ratings collected in a
+  head-mounted display; ``Net.'': network delay/loss as independent
+  variables; ``Model'': \qoe model fitted to subjective scores;
+  ``Rel.\ \quic'': unmodified, fully reliable \quic; ``Mech.'': the
+  model derives its explanatory variable from transport mechanics
+  rather than fitting delay and loss directly.}
+  \label{tab:positioning}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{@{}llcccccc@{}}
+    \toprule
+    Work & Codec & Subj. & \glsentryshort{vr} \glsentryshort{hmd} & Net. & Model & Rel.\ \quic & Mech. \\
+    \midrule
+    Cox et al.~\cite{Cox2023}              & \vpcc       & \checkmark & --         & --         & --         & -- & -- \\
+    Nguyen et al.~\cite{nguyen2023}        & \vpcc       & \checkmark & \checkmark & --         & --         & -- & -- \\
+    Van Damme et al.~\cite{vandamme2024}   & \vpcc       & \checkmark & --         & --         & \checkmark & -- & -- \\
+    Dumic et al.~\cite{dumic2023}          & \vpcc       & \checkmark & --         & \checkmark & --         & -- & -- \\
+    Wen et al.~\cite{wen2024}              & --          & --         & --         & \checkmark & \checkmark & -- & -- \\
+    Ravuri et al.~\cite{ravuri2023}        & \vpcc       & --         & --         & \checkmark & --         & partial & -- \\
+    Rudolph et al.~\cite{rudolph2025rabbit}& \vpcc       & --         & --         & --         & --         & -- & -- \\
+    Udora et al.~\cite{qoeholographic,udora2025thesis} & uncompressed & \checkmark & \checkmark & \checkmark & \checkmark & \glsentryshort{tcp} & -- \\
+    \mosaic~\cite{mosaic2026}              & \vpcc       & --         & \checkmark & \checkmark & --         & \checkmark & -- \\
+    \vquest~\cite{vquest2026}              & frame-indep. & \checkmark & \checkmark & \checkmark & --         & \checkmark & -- \\
+    \textbf{\crystal (this work)}          & \vpcc       & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular}
+\end{table}
