@@ -111,20 +111,29 @@ volumetric content specifically; the methodology of
 Section~\ref{sec:method} follows P.910 and the emerging practice for
 point-cloud video~\cite{nguyen2023,Cox2023}.
 
-\subsection{Transport: From \gls{tcp} to Reliable \quic}
+\subsection{Transport: Reliable \quic for Volumetric Delivery}
 \label{sec:bg-quic}
 
-Media delivery over HTTP/1.1 and HTTP/2 is bounded by their \gls{tcp}
-foundation: a single lost segment blocks delivery of everything behind
-it (head-of-line blocking), connection setup costs two to three
-round-trips, and slow start limits initial throughput. \quic~\cite{rfc9000}
-rebuilds the transport over \gls{udp} in user space. It integrates \gls{tls}~1.3
-into a 1-\gls{rtt} (or 0-\gls{rtt} on resumption) handshake, multiplexes
-independent streams so that loss on one stream does not block another,
-identifies connections by an ID that survives address changes, and is
-the substrate of \gls{http3}. By mid-2025 roughly a third of public web
-sites served \gls{http3}, so \quic is the transport a deployed volumetric
-service would most plausibly use.
+A \vpcc stream reaches the renderer as a sequence of \gof chunks, each
+fetched as an HTTP object against its own presentation deadline. The
+transport therefore matters at the granularity of the chunk: what
+happens to one chunk when a packet is lost or delayed, and whether
+that disturbance propagates to the chunks behind it. Over
+HTTP/1.1 and HTTP/2 the answer is dictated by \gls{tcp}: a single lost
+segment holds back every byte queued behind it on the connection
+(\gls{hol} blocking), and the multiplexing that HTTP/2 added at the
+application layer cannot undo an in-order guarantee imposed below it.
+\quic~\cite{rfc9000} was designed to remove that coupling. It carries
+multiplexed, independently ordered streams over \gls{udp} in user
+space, so loss on one stream does not stall another; it folds
+\gls{tls}~1.3 into a 1-\gls{rtt} handshake (0-\gls{rtt} on resumption);
+and it identifies a connection by an ID rather than a 4-tuple, so a
+session survives an address change. \quic is the substrate of
+\gls{http3}, which by August 2025 was served by roughly 35\% of public
+web sites~\cite{w3techs2025}, and it is the transport a deployed
+volumetric service would most plausibly use: production CDNs, browsers
+and mobile stacks already ship it, and it needs no change to the
+HTTP-object model that a chunked \vpcc stream fits naturally.
 
 Two properties of standard \quic determine how network impairment
 reaches a volumetric decoder. First, \quic is \emph{reliable}: lost
