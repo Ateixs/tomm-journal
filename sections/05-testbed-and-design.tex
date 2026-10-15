@@ -53,7 +53,7 @@ transport path.
 \subsection{Stage 1: \vpcc Delivery over Reliable \quic}
 \label{sec:sys-stage1}
 The \vpcc-encoded sequences are hosted on a volumetric server running
-Caddy~v2~\cite{caddy} (quic-go~\cite{quicgo}), which serves per-\gof chunks over \gls{http3} with
+Caddy~v2 (quic-go), which serves per-\gof chunks over \gls{http3} with
 \gls{tls}~1.3. Chunks traverse a Linux Traffic Control chain (TBF + netem)
 that implements the impairment profile of each slice; each slice is
 bound to a distinct \gls{udp} port on the same origin, so all slices are
