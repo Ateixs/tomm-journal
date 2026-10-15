@@ -11,23 +11,49 @@ stereo frames from the edge renderer to the user's \hmd over a private
 so that any variation in perceived quality originates in the Stage~1
 transport path.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \todo{Figure: origin (Caddy HTTP/3) $\to$ Linux \texttt{tc} impairment
-  $\to$ edge renderer (Unity~6, 5G-MAG \gls{v3c} decoder) $\to$ ALVR casting
-  $\to$ Ericsson private 5G SA (RU/BBU/NC) $\to$ Meta Quest~3 with 5G
-  USB dongle. Mark the four slices A--D and the per-\gof telemetry
-  point.}
-  \caption{End-to-end architecture. Network effects of interest are
-  observable at the edge renderer; the casting stage is
-  architecturally transparent.}
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+      font=\footnotesize,
+      box/.style={draw, rounded corners=2pt, align=center, minimum height=10mm, inner sep=3pt, fill=white},
+      stage/.style={draw, dashed, rounded corners=4pt, inner sep=5pt},
+      slice/.style={draw, rounded corners=1pt, inner sep=2pt, font=\scriptsize, fill=white, text width=30mm, align=left},
+      arr/.style={-{Latex[length=2mm]}, thick},
+      lbl/.style={font=\scriptsize, text=black!70, align=center}
+    ]
+    \node[box, text width=26mm] (origin) {\textbf{Volumetric server}\\Caddy, \glsentryshort{http3}/\quic\\per-\glsentryshort{gof} chunks};
+    \node[box, text width=26mm, right=18mm of origin] (tc) {\textbf{Impairment}\\Linux \glsentryshort{tc}\\(TBF + netem)};
+    \node[box, text width=28mm, right=18mm of tc] (edge) {\textbf{Edge renderer}\\Unity~6, V3C decoder\\per-\glsentryshort{gof} telemetry};
+    \node[box, text width=24mm, right=18mm of edge] (gnb) {\textbf{Private 5G SA}\\Ericsson\\RU / BBU / NC};
+    \node[box, text width=24mm, right=14mm of gnb] (hmd) {\textbf{Meta Quest~3}\\5G USB dongle\\\glsentryshort{acr} rating};
+    \draw[arr] (origin) -- node[above, lbl] {\quic v1\\one port per slice} (tc);
+    \draw[arr] (tc) -- node[above, lbl] {\glsentryshort{http3} GET\\per \glsentryshort{gof}} (edge);
+    \draw[arr] (edge) -- node[above, lbl] {ALVR\\stereo frames} (gnb);
+    \draw[arr] (gnb) -- node[above, lbl] {5G NR} (hmd);
+    \node[slice, below=4mm of tc] (sA) {\textbf{A} clean \hfill RA, \glsentryshort{gof}\,32};
+    \node[slice, below=1mm of sA] (sB) {\textbf{B} loss \hfill \glsentryshort{ldp}, \glsentryshort{gof}\,4};
+    \node[slice, below=1mm of sB] (sC) {\textbf{C} latency \hfill \glsentryshort{ldp}, \glsentryshort{gof}\,4};
+    \node[slice, below=1mm of sC] (sD) {\textbf{D} loss + latency \hfill \glsentryshort{ldp}, \glsentryshort{gof}\,4};
+    \draw[-, thin, black!60] (tc.south) -- (sA.north);
+    \begin{scope}[on background layer]
+      \node[stage, fit=(origin)(tc)(edge)(sD), label={[lbl]below:{Stage 1: transport path under test}}] {};
+      \node[stage, fit=(gnb)(hmd), label={[lbl]below:{Stage 2: held constant}}] {};
+    \end{scope}
+  \end{tikzpicture}}
+  \caption{End-to-end testbed. Stage~1 delivers \vpcc content from the
+  origin to the edge renderer over reliable \quic through one of four
+  impairment slices, each bound to its own UDP port; Stage~2 casts the
+  rendered stereo frames to the headset over the private \fiveg network
+  and is identical across conditions. All network effects of interest
+  are observable at the edge renderer.}
   \label{fig:architecture}
-\end{figure}
+\end{figure*}
 
 \subsection{Stage 1: \vpcc Delivery over Reliable \quic}
 \label{sec:sys-stage1}
 The \vpcc-encoded sequences are hosted on a volumetric server running
-Caddy~v2 (quic-go), which serves per-\gof chunks over \gls{http3} with
+Caddy~v2~\cite{caddy} (quic-go~\cite{quicgo}), which serves per-\gof chunks over \gls{http3} with
 \gls{tls}~1.3. Chunks traverse a Linux Traffic Control chain (TBF + netem)
 that implements the impairment profile of each slice; each slice is
 bound to a distinct \gls{udp} port on the same origin, so all slices are

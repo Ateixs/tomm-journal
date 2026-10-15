@@ -115,27 +115,41 @@ point-cloud video~\cite{nguyen2023,Cox2023}.
 \subsection{Transport: Reliable \quic for Volumetric Delivery}
 \label{sec:bg-quic}
 
-A \vpcc stream reaches the renderer as a sequence of \gof chunks, each
-fetched as an HTTP object against its own presentation deadline. The
-transport therefore matters at the granularity of the chunk: what
-happens to one chunk when a packet is lost or delayed, and whether
-that disturbance propagates to the chunks behind it. Over HTTP/1.1
-and HTTP/2 the answer is dictated by \gls{tcp}: a single lost segment
-holds back every byte queued behind it on the connection (\gls{hol}
-blocking), and the multiplexing HTTP/2 added at the application layer
-cannot undo an in-order guarantee imposed below it. \quic was designed
-to remove that coupling. Standardised by the \gls{ietf} as \quic
-version~1 in RFC~9000~\cite{rfc9000}, with its \gls{tls} integration in
-RFC~9001~\cite{rfc9001} and its loss-detection and congestion-control
-procedures in RFC~9002~\cite{rfc9002}, it is the substrate of
-\gls{http3} (RFC~9114~\cite{rfc9114}). Adoption is substantial: by
+Volumetric video is delivered the way 2D video is delivered at scale:
+as a sequence of time-bounded media objects fetched over HTTP. The
+HTTP adaptive-streaming model, standardised as \gls{dash} and adopted by
+every major video service, packages content into segments that a
+client requests one by one, which lets delivery ride on ordinary web
+infrastructure (origins, caches, \glspl{cdn}, TLS) and lets the client
+choose among representations as conditions change. MPEG carries this
+model over to volumetric media: the V3C carriage specification defines
+how \vpcc bitstreams are packaged into ISOBMFF tracks and \gls{dash}
+segments~\cite{v3ccarriage}, and the 5G-MAG V3C reference platform
+plays such streams from an HTTP origin~\cite{fivegmag}. The streaming
+systems in Section~\ref{sec:related} follow the same convention, and so
+does the testbed of Section~\ref{sec:system}, where each \vpcc \gof is
+one HTTP object served by an \gls{http3} origin. A \vpcc stream
+therefore reaches the renderer as a sequence of \gof chunks, each
+fetched against its own presentation deadline, and the transport
+question is posed at that granularity: what happens to one chunk when
+a packet is lost or delayed, and whether the disturbance propagates to
+the chunks behind it.
+
+Over HTTP/1.1 and HTTP/2 the answer is dictated by \gls{tcp}: a single
+lost segment holds back every byte queued behind it on the connection
+(\gls{hol} blocking), and the multiplexing HTTP/2 added at the
+application layer cannot undo an in-order guarantee imposed below it.
+\quic was designed to remove that coupling. Standardised by the
+\gls{ietf} as \quic version~1~\cite{rfc9000}, with loss detection and
+congestion control specified separately~\cite{rfc9002}, it is the
+substrate of \gls{http3}~\cite{rfc9114}. Adoption is substantial: by
 October 2026, 40.9\% of public web sites advertised \gls{http3}
 support~\cite{w3techs2026}, and roughly one fifth of the HTTP requests
 observed by Cloudflare were carried over it~\cite{cfradar2026}. The
-testbed of Section~\ref{sec:system} uses \quic version~1 as
-implemented by quic-go~\cite{quicgo} inside the Caddy
-server~\cite{caddy}, with \gls{tls}~1.3 and AES-128-GCM, which is the
-configuration a production \gls{http3} origin would run.
+testbed of Section~\ref{sec:system} uses \quic version~1 as implemented
+by quic-go inside the Caddy server, with \gls{tls}~1.3 and
+AES-128-GCM, which is the configuration a production \gls{http3} origin
+would run.
 
 \paragraph{Connections, handshake and streams.}
 \quic runs over \gls{udp} in user space. A connection is identified by
@@ -146,7 +160,7 @@ transport handshakes are combined: \gls{tls}~1.3 runs inside \quic
 CRYPTO frames, so a fresh connection is established in one round trip,
 and a client resuming a connection to a known server may send
 application data in its first flight (0-\gls{rtt}), at the cost that
-such data is replayable and must be idempotent~\cite{rfc9001}. All
+such data is replayable and must be idempotent. All
 packets after the first are encrypted and authenticated with an AEAD,
 and even packet headers are protected, so middleboxes cannot inspect
 or modify transport state. Within a connection, data flows on
@@ -183,7 +197,7 @@ packet in question is older than $\tfrac{9}{8}\max(\mathrm{sRTT},
 \end{equation}
 and it doubles on each consecutive expiry. Congestion control is
 pluggable; RFC~9002 specifies a NewReno-style controller as the
-baseline and quic-go ships Cubic by default~\cite{quicgo}. The
+baseline and quic-go ships Cubic by default. The
 practical consequence is that the recovery cost of a loss is at least
 one \gls{rtt} when later packets are flowing, and a full \gls{pto} when
 the lost packet is the last of a burst (a tail loss), which is the
@@ -196,7 +210,7 @@ Two properties of standard \quic determine how network impairment
 reaches a volumetric decoder. First, \quic is \emph{reliable}: lost
 packets are detected and retransmitted, and stream data is delivered
 in order. Unreliable delivery exists only as an extension, the
-DATAGRAM frame of RFC~9221~\cite{rfc9221}, which \gls{http3} does not
+DATAGRAM frame extension, which \gls{http3} does not
 use for request bodies; the partially reliable variants in the
 literature~\cite{ravuri2023,haseeb2025} build on it or on custom stream
 cancellation. Second, stream independence does not help a \vpcc \gof:
