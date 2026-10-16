@@ -125,31 +125,53 @@ choose among representations as conditions change. MPEG carries this
 model over to volumetric media: the V3C carriage specification defines
 how \vpcc bitstreams are packaged into ISOBMFF tracks and \gls{dash}
 segments~\cite{v3ccarriage}, and the 5G-MAG V3C reference platform
-plays such streams from an HTTP origin~\cite{fivegmag}. The streaming
-systems in Section~\ref{sec:related} follow the same convention, and so
-does the testbed of Section~\ref{sec:system}, where each \vpcc \gof is
-one HTTP object served by an \gls{http3} origin. A \vpcc stream
-therefore reaches the renderer as a sequence of \gof chunks, each
-fetched against its own presentation deadline, and the transport
-question is posed at that granularity: what happens to one chunk when
-a packet is lost or delayed, and whether the disturbance propagates to
-the chunks behind it.
+plays such streams from an HTTP origin through a \gls{dash}
+client~\cite{fivegmag}. The streaming systems in
+Section~\ref{sec:related} follow the same convention. So does the
+testbed of Section~\ref{sec:system}, with one deliberate change: the
+\gls{v3c} decoder is kept, the \gls{dash} client that feeds it is
+replaced by a native \gls{http3} fetcher, and each \vpcc \gof is one
+HTTP object served by an \gls{http3} origin~\cite{mosaic2026}. The
+object model is therefore unchanged, and what the substitution changes
+is the transport beneath it. A \vpcc stream reaches the renderer as a
+sequence of \gof chunks, each fetched against its own presentation
+deadline, and the transport question is posed at that granularity: what
+happens to one chunk when a packet is lost or delayed, and whether the
+disturbance propagates to the chunks behind it.
 
-Over HTTP/1.1 and HTTP/2 the answer is dictated by \gls{tcp}: a single
-lost segment holds back every byte queued behind it on the connection
-(\gls{hol} blocking), and the multiplexing HTTP/2 added at the
-application layer cannot undo an in-order guarantee imposed below it.
-\quic was designed to remove that coupling. Standardised by the
-\gls{ietf} as \quic version~1~\cite{rfc9000}, with loss detection and
-congestion control specified separately~\cite{rfc9002}, it is the
-substrate of \gls{http3}~\cite{rfc9114}. Adoption is substantial: by
-October 2026, 40.9\% of public web sites advertised \gls{http3}
-support~\cite{w3techs2026}, and roughly one fifth of the HTTP requests
-observed by Cloudflare were carried over it~\cite{cfradar2026}. The
-testbed of Section~\ref{sec:system} uses \quic version~1 as implemented
-by quic-go inside the Caddy server, with \gls{tls}~1.3 and
-AES-128-GCM, which is the configuration a production \gls{http3} origin
-would run.
+With \gls{dash} over HTTP/1.1 or HTTP/2 the answer is dictated by
+\gls{tcp}, and it is unfavourable for deadline-bound chunks in three
+ways. A single lost segment holds back every byte queued behind it on
+the connection (\gls{hol} blocking), so a loss inside one \gof also
+stalls the next \gof already in flight; the multiplexing HTTP/2 added
+at the application layer cannot undo an in-order guarantee imposed
+below it. Recovery is slow: retransmission ambiguity and coarse
+timers make \gls{tcp}'s loss detection conservative, and each new
+connection costs two to three round trips before the first byte. And
+the connection is bound to a 4-tuple, so a path change on a mobile
+client resets it. \quic was designed to remove exactly these
+couplings. Standardised by the \gls{ietf} as \quic
+version~1~\cite{rfc9000}, with loss detection and congestion control
+specified separately~\cite{rfc9002}, it is the substrate of
+\gls{http3}~\cite{rfc9114}. For \gof-chunked delivery its relevant
+properties are: independent streams, so a chunk still being recovered
+does not block the chunks behind it and a paced controller can keep
+several \gofs in flight; unambiguous packet numbering and fine-grained
+acknowledgements, so a lost packet is detected and repaired in about
+one round trip rather than a timeout; a 1-\gls{rtt} (or 0-\gls{rtt})
+handshake; and connection migration. The measurements
+of~\cite{mosaic2026} show the practical consequence: application-layer
+goodput held or even rose under impairment as the congestion
+controller reclaimed throughput after recovery, so the cost of loss
+surfaced as \emph{delay} at the chunk deadline rather than as lost
+throughput. That is the regime \crystal models, and it is also the
+regime a deployed service would find itself in: by October 2026, 40.9\%
+of public web sites advertised \gls{http3} support~\cite{w3techs2026},
+and roughly one fifth of the HTTP requests observed by Cloudflare were
+carried over it~\cite{cfradar2026}. The testbed of
+Section~\ref{sec:system} uses \quic version~1 as implemented by quic-go
+inside the Caddy server, with \gls{tls}~1.3 and AES-128-GCM, which is
+the configuration a production \gls{http3} origin would run.
 
 \paragraph{Connections, handshake and streams.}
 \quic runs over \gls{udp} in user space. A connection is identified by
