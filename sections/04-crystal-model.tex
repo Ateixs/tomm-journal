@@ -14,39 +14,149 @@ subjective study is smoothness of playback.
 
 \subsection{Layer 1: Transport Model}
 \label{sec:model-layer1}
-\todo{Derive the temporal loss fraction. Define the delivery unit (the
-\gof for \vpcc), its size $G$ in frames, the playout deadline, the
-delivery slack $S$ (time between \gof completion and its deadline under
-no impairment), the per-loss recovery cost $R$ from
-Eq.~\eqref{eq:pto} (at least one \gls{rtt}; one \gls{pto} for tail losses), and
-the probability that at least one of the \gof's packets is lost. Show
-that a \gof stalls when recovered delay exceeds $S$, and that the
-expected stall duration accumulates into}
+
+Layer~1 maps the network condition and the encoder configuration to a
+single observable, the \emph{temporal loss fraction} $\tlf$, the share
+of wall-clock playback time during which the renderer is not showing
+the frame it should. It contains no perceptual quantity: every term is
+either a transport parameter or a property of the bitstream, and every
+intermediate is measurable from the renderer's telemetry.
+
+\paragraph{Delivery unit and deadline.}
+The stream is a sequence of delivery units $k = 1, 2, \ldots$; for
+\vpcc the delivery unit is the \gof, with $G$ frames at frame rate $f$
+and nominal duration $T_u = G/f$. Unit $k$ has $n_k = \lceil B_k / P
+\rceil$ packets, where $B_k$ is its encoded size and $P$ the payload per
+\quic packet (\SI{1376}{B} on the testbed, Section~\ref{sec:system}).
+The client fetches units over a persistent \gls{http3} connection with
+a paced controller that keeps up to $W$ units in flight and starts
+unit $k$ at $r_k$; the unit must be decoded by its presentation
+deadline $d_k$. Under no impairment, delivery takes $D^0_k = \rho +
+B_k/C$, one round trip $\rho$ for the request plus transfer at goodput
+$C$, and the \emph{slack}
 \begin{equation}
-  \crystallayerone,
+  S_k = d_k - r_k - D^0_k
+  \label{eq:slack}
+\end{equation}
+is the budget the unit has for absorbing a disturbance. $S_k$ is set by
+the prefetch margin and the pacing of the controller, grows with $T_u$,
+and is read directly from Slice~A telemetry rather than modelled.
+
+\paragraph{How delay and loss consume slack.}
+Added one-way latency $\ell$ raises the round trip to $\rho' = \rho +
+2\ell$ and so adds $2\ell$ to every unit's delivery time; it also
+lowers the goodput a window-limited transfer can reach, which we fold
+into $C(\rho')$. Packet loss at rate $p$ never removes data from the
+stream: a unit with at least one lost packet, which happens with
+probability $1 - (1-p)^{n_k} \approx n_k p$, is completed only after
+recovery. Each loss event costs a recovery time $R$ that is at least
+one round trip when later packets keep flowing and a full \gls{pto}
+when the lost packet is among the last of the unit (a tail loss),
+\begin{equation}
+  R(\rho') = \rho' + \pi_{\mathrm{tail}}\,[\mathrm{PTO}(\rho') - \rho'],
+  \qquad \pi_{\mathrm{tail}} \approx \frac{k_{\mathrm{PacketThreshold}}}{n_k},
+  \label{eq:recovery}
+\end{equation}
+with $\mathrm{PTO}$ from Eq.~\eqref{eq:pto}; the accompanying
+congestion-window reduction lowers $C$ for the following units and is
+absorbed into $C(\rho')$ as a measured, not fitted, quantity. With
+$L_k \sim \mathrm{Binomial}(n_k, p)$ loss events, the delivery time of
+unit $k$ under impairment is
+\begin{equation}
+  D_k = 2\ell + \frac{B_k}{C(\rho')} - \frac{B_k}{C} + L_k\, R(\rho'),
+  \label{eq:delay}
+\end{equation}
+and the unit misses its deadline when $D_k > S_k$.
+
+\paragraph{From misses to temporal loss.}
+The renderer's policy on a miss is the one of~\cite{mosaic2026}: the
+late unit is dropped and the last good unit is held, so a miss costs
+the viewer the $G$ frames of that unit, shown as a freeze of length
+$T_u$ followed by a skip. A unit that arrives late but within the
+hold window contributes a freeze of length $\tau_k = \max(0, D_k -
+S_k)$. Over a session of $N$ units the temporal loss fraction is
+\begin{equation}
+  \tlf = \frac{1}{N\,T_u}\sum_{k=1}^{N}\Big[\tau_k + T_u\,\mathbb{1}(D_k - S_k > H)\Big]
+  \;=\; \crystallayerone,
   \label{eq:tlf}
 \end{equation}
-\todo{with $\tlf = f(S, \mathrm{RTT}, R, G, \plr)$ containing no
-perceptual free parameter. State the two consequences that become the first two predictions of
-Section~\ref{sec:model-predictions}: (i) delay and loss enter $\tlf$ jointly through $S$ and $R$,
-so their effects on \qoe cannot be additive; (ii) $G$ changes both the
-exposure (more packets per \gof) and the slack, so resilience is
-governed by \gof size rather than by codec identity.}
+where $H$ is the hold window after which the unit is dropped, and the
+second form is the operational definition measured from telemetry: one
+minus the ratio of frames rendered on schedule to frames due. Taking
+expectations over $L_k$ gives $\tlf$ as a function of
+$(\ell, p, G, B_k, S_k, \rho, C)$ with no free parameter; the
+$B_k$, $S_k$, $\rho$ and $C$ are measured on the clean slice and the
+rest are experimental settings.
+
+\paragraph{Two consequences.}
+Equation~\eqref{eq:delay} contains the model's two structural claims.
+First, delay and loss do not add in their effect on $\tlf$: each alone
+is absorbed while $2\ell < S_k$ and $n_k p\,R < S_k$, and a miss
+occurs only when their sum exceeds the slack, so the response is a
+threshold in the combined load rather than a sum of two responses.
+This is the source of the $A \approx B \approx C \gg D$ prediction.
+Second, the \gof size $G$ enters on both sides of the inequality. A
+larger unit has more packets at risk ($n_k \propto G$) and so more loss
+events per unit, but it also has proportionally more slack ($S_k$
+grows with $T_u = G/f$) and amortises the fixed per-request cost
+$2\ell$ over $G$ frames; the per-frame cost of latency falls as $1/G$
+while the per-frame cost of loss is roughly constant. For the
+loss-dominated and latency-dominated regimes of the factorial design
+this predicts that \gls{ldp} \gof{}=16 is \emph{more} resilient than
+\gof{}=4 at matched impairment, the opposite of the intuition that
+shorter units limit damage, and the opposite of what loss magnitude
+alone would predict.
 
 \subsection{Layer 2: Perceptual Model}
 \label{sec:model-layer2}
+
+Layer~2 maps $\tlf$ to the mean opinion score of the rated attribute,
+playback smoothness. We adopt the IQX relation of Fiedler et
+al.~\cite{fiedler2010}: the sensitivity of perceived quality to an
+additional unit of impairment is proportional to the quality that
+remains, $\mathrm{d}Q/\mathrm{d}\tlf = -\alpha\,(Q - Q_{\min})$, whose
+solution on the five-point \gls{acr} scale with floor $Q_{\min} = 1$ is
 \begin{equation}
-  \crystalmodel
+  \crystalmodel,
   \label{eq:crystal}
 \end{equation}
-\todo{Define $\qc = (\mos_{A,c} - 1)/4$, the clean-reference ceiling
-measured from Slice~A ratings of content $c$; $\alpha$ is the single
-perceptual parameter. Justify the exponential kernel from the IQX
-hypothesis~\cite{fiedler2010}. Boundary behaviour:
-$\widehat{\mos} \to 1 + 4\qc$ as $\tlf \to 0$ and $\to 1$ as
-$\tlf \to \infty$. Prediction: the three $\qc$ are $\approx 1$ and
-statistically indistinguishable, collapsing the model to
-$\mos = 1 + 4e^{-\alpha\tlf}$.}
+where $\qc \in (0, 1]$ is the clean-reference ceiling of content $c$
+and $\alpha > 0$ is the single perceptual parameter. The ceiling is
+not fitted: it is anchored to the clean slice,
+\begin{equation}
+  \qc = \frac{\mosm_{A,c} - 1}{4},
+  \label{eq:ceiling}
+\end{equation}
+so that the model reproduces the impairment-free rating of each
+content by construction and $\alpha$ carries only the response to
+temporal loss. The model has the boundary behaviour required of a
+smoothness score, $\widehat{\mosm} \to 1 + 4\qc$ as $\tlf \to 0$ and
+$\widehat{\mosm} \to 1$ as $\tlf \to \infty$, and $\alpha$ has a direct
+reading: $\tlf_{1/2} = \ln 2/\alpha$ is the temporal loss at which the
+rating has lost half its headroom above the floor.
+
+Two design decisions follow from the rated attribute. Objective
+fidelity does not enter Eq.~\eqref{eq:crystal}: \pcqm is reported per
+sequence as a stimulus descriptor (Section~\ref{sec:sys-content}), but
+spatial fidelity is fixed within a session and has no bearing on
+perceived smoothness, so giving it a coefficient would only absorb
+variance that belongs to content. And because the clean slice is
+rendered without stalls, the model predicts that the three $\qc$ are
+close to one and statistically indistinguishable, in which case
+Eq.~\eqref{eq:crystal} collapses to $\widehat{\mosm} = 1 + 4e^{-\alpha\tlf}$,
+a one-parameter curve shared by all content.
+
+The two layers are falsifiable separately. Layer~1 predicts a measured
+quantity, $\tlf$, from settings and clean-slice telemetry, and can be
+checked against the renderer's deadline log without any rating.
+Layer~2 is fitted on measured $\tlf$, not on modelled $\tlf$, so an
+error in Layer~1 cannot be hidden by $\alpha$; conversely, a good
+Layer~2 fit on measured $\tlf$ with a poor Layer~1 prediction would
+locate the failure in the transport model alone. Compared with
+Eq.~\eqref{eq:udora}, which fits delay and loss directly with five
+coefficients per quality level, \crystal moves the explanatory burden
+into a derived variable and leaves one constant to be learned from
+people.
 
 \subsection{Model Predictions}
 \label{sec:model-predictions}
@@ -54,9 +164,9 @@ Because $\tlf$ is derived rather than fitted, the model commits to
 three predictions before any rating is collected, and the evaluation of
 Section~\ref{sec:results} is organised around them.
 
-\emph{Latency and loss interact.} Both impairments enter $\tlf$ jointly
-through the slack $S$ and the recovery cost $R$, so their effects on
-\mos cannot be additive as Eq.~\eqref{eq:udora} assumes. Across the
+\emph{Latency and loss interact.} Both impairments consume the same
+slack in Eq.~\eqref{eq:delay}, so their effects on \mos cannot be
+additive as Eq.~\eqref{eq:udora} assumes. Across the
 four slices of Section~\ref{sec:design-network} the model predicts
 $A \approx B \approx C \gg D$: either impairment alone is absorbed by
 the slack, and only their combination exhausts it.
@@ -64,8 +174,8 @@ the slack, and only their combination exhausts it.
 \emph{Delivery-unit structure, not loss magnitude, governs
 resilience.} For fixed delay and loss, $\tlf$ depends on the \gof size
 $G$ through both the number of packets at risk per unit and the slack
-available to recover them. \todo{State the direction Layer~1 predicts
-for \gls{ldp} \gof{}=4 versus \gof{}=16.}
+available to recover them, and Layer~1 predicts that \gls{ldp}
+\gof{}=16 is more resilient than \gof{}=4 at matched impairment.
 
 \emph{One perceptual parameter generalises.} A single $\alpha$ fitted
 on one subset of conditions predicts held-out conditions without
