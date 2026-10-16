@@ -15,11 +15,11 @@ transport path.
   \centering
   \includegraphics[width=\textwidth]{pipeline.pdf}
   \caption{End-to-end testbed, after~\cite{mosaic2026}. Stage~1
-  delivers \vpcc content from the volumetric server~\ding{172} over
-  reliable \quic through one of four impairment slices~\ding{173}, each
-  bound to its own UDP port, to the edge renderer~\ding{174}, which is
-  colocated with the gNodeB~\ding{175} of the private \fiveg network.
-  Stage~2 casts the rendered stereo frames through the network
+  delivers \vpcc content from the volumetric server~\ding{172}, where
+  impairment is injected at the host's egress on one UDP port per
+  slice~\ding{173}, over reliable \quic to the edge renderer~\ding{174},
+  which is colocated with the gNodeB~\ding{175} of the private \fiveg
+  network. Stage~2 casts the rendered stereo frames through the network
   controller, baseband unit and radio unit to the Meta Quest~3~\ding{176}
   and is identical across conditions, so all network effects of interest
   are observable at the edge renderer. (Vector source:

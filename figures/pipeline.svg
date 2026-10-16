@@ -5,44 +5,45 @@
  <marker id="arrb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#24415f"/></marker>
  <filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#1f2937" flood-opacity="0.12"/></filter>
 </defs>
-<path d="M36 42 V28 H786 V42" fill="none" stroke="#24415f" stroke-width="2"/>
-<rect x="300" y="17" width="222" height="22" rx="11" fill="#eef3f9" stroke="#c7d3e3"/>
-<text x="411" y="33" font-size="14" font-weight="700" fill="#24415f" text-anchor="middle" letter-spacing="0.4">STAGE 1 · V-PCC OVER QUIC</text>
-<path d="M812 42 V28 H1204 V42" fill="none" stroke="#5a4a2b" stroke-width="2"/>
-<rect x="900" y="17" width="216" height="22" rx="11" fill="#f4f1ea" stroke="#dcd3c2"/>
-<text x="1008" y="33" font-size="14" font-weight="700" fill="#5a4a2b" text-anchor="middle" letter-spacing="0.4">STAGE 2 · EDGE-TO-HMD</text>
-<rect x="16" y="60" width="246" height="484" rx="18" fill="#f6f7f9" stroke="#d1d5db" stroke-width="1.5"/>
-<rect x="276" y="60" width="712" height="484" rx="18" fill="#eef3f9" stroke="#c7d3e3" stroke-width="1.5"/>
-<rect x="1002" y="60" width="222" height="484" rx="18" fill="#f4f1ea" stroke="#dcd3c2" stroke-width="1.5"/>
+<path d="M36 42 V28 H814 V42" fill="none" stroke="#24415f" stroke-width="2"/>
+<rect x="314" y="17" width="222" height="22" rx="11" fill="#eef3f9" stroke="#c7d3e3"/>
+<text x="425" y="33" font-size="14" font-weight="700" fill="#24415f" text-anchor="middle" letter-spacing="0.4">STAGE 1 · V-PCC OVER QUIC</text>
+<path d="M840 42 V28 H1204 V42" fill="none" stroke="#5a4a2b" stroke-width="2"/>
+<rect x="914" y="17" width="216" height="22" rx="11" fill="#f4f1ea" stroke="#dcd3c2"/>
+<text x="1022" y="33" font-size="14" font-weight="700" fill="#5a4a2b" text-anchor="middle" letter-spacing="0.4">STAGE 2 · EDGE-TO-HMD</text>
+<rect x="16" y="60" width="548" height="484" rx="18" fill="#f6f7f9" stroke="#d1d5db" stroke-width="1.5"/>
+<rect x="578" y="60" width="438" height="484" rx="18" fill="#eef3f9" stroke="#c7d3e3" stroke-width="1.5"/>
+<rect x="1030" y="60" width="194" height="484" rx="18" fill="#f4f1ea" stroke="#dcd3c2" stroke-width="1.5"/>
 <text x="36" y="92" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="0.5">CLOUD · ORIGIN</text>
-<text x="296" y="92" font-size="18" font-weight="700" fill="#24415f" letter-spacing="0.5">PRIVATE 5G SA (ERICSSON) · COLOCATED EDGE</text>
-<text x="296" y="114" font-size="15" fill="#5b6b7f">impairment injected on the origin→edge path; renderer sits with the gNodeB</text>
-<text x="1022" y="92" font-size="18" font-weight="700" fill="#5a4a2b" letter-spacing="0.5">USER END</text>
-<g transform="translate(36,136)"><rect width="206" height="184" rx="14" fill="#fff" stroke="#d1d5db" filter="url(#sh)"/>
+<text x="36" y="114" font-size="15" fill="#6b7280">impairment injected at the volumetric server, one UDP port per slice</text>
+<text x="598" y="92" font-size="18" font-weight="700" fill="#24415f" letter-spacing="0.5">PRIVATE 5G SA · COLOCATED EDGE</text>
+<text x="598" y="114" font-size="15" fill="#5b6b7f">Ericsson; renderer sits with the gNodeB</text>
+<text x="1050" y="92" font-size="18" font-weight="700" fill="#5a4a2b" letter-spacing="0.5">USER END</text>
+<g transform="translate(36,136)"><rect width="236" height="184" rx="14" fill="#fff" stroke="#d1d5db" filter="url(#sh)"/>
 <g transform="translate(18,16)" stroke="#4b5563" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="0" y="0" width="44" height="14" rx="3"/><rect x="0" y="20" width="44" height="14" rx="3"/><rect x="0" y="40" width="44" height="14" rx="3"/><circle cx="36" cy="7" r="2" fill="#4b5563"/><circle cx="36" cy="27" r="2" fill="#4b5563"/><circle cx="36" cy="47" r="2" fill="#4b5563"/></g>
 <text x="18" y="98" font-size="21" font-weight="700" fill="#1f2937">Volumetric server</text>
 <text x="18" y="124" font-size="17" fill="#4b5563">Caddy · HTTP/3 origin</text>
 <text x="18" y="147" font-size="17" fill="#4b5563">V-PCC GOF chunks</text>
-<text x="18" y="168" font-size="15" fill="#6b7280">TLS 1.3 · AES-128-GCM</text>
+<text x="18" y="168" font-size="15" fill="#6b7280">TMC2 v25 + x265 · 8iVFB</text>
 </g>
-<circle cx="224" cy="154" r="12" fill="#4b5563"/><text x="224" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">1</text>
-<g transform="translate(300,136)"><rect width="222" height="184" rx="14" fill="#fff" stroke="#c7d3e3" filter="url(#sh)"/>
+<circle cx="254" cy="154" r="12" fill="#4b5563"/><text x="254" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+<g transform="translate(306,136)"><rect width="236" height="184" rx="14" fill="#fff" stroke="#d1d5db" filter="url(#sh)"/>
 <g transform="translate(18,16)" stroke="#b5651d" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M0 0 H48 L29 22 V46 L19 54 V22 Z"/><line x1="8" y1="10" x2="40" y2="10" stroke-dasharray="3 3"/></g>
 <text x="18" y="98" font-size="21" font-weight="700" fill="#1f2937">Impairment</text>
 <text x="18" y="124" font-size="17" fill="#4b5563">Linux TC: TBF + netem</text>
-<text x="18" y="147" font-size="17" fill="#4b5563">one UDP port per slice</text>
-<text x="18" y="168" font-size="15" fill="#6b7280">loss · added latency</text>
+<text x="18" y="147" font-size="17" fill="#4b5563">loss · added latency</text>
+<text x="18" y="168" font-size="15" fill="#6b7280">egress of the origin host</text>
 </g>
-<circle cx="504" cy="154" r="12" fill="#b5651d"/><text x="504" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">2</text>
-<g transform="translate(566,136)"><rect width="220" height="184" rx="14" fill="#fff" stroke="#c7d3e3" filter="url(#sh)"/>
+<circle cx="524" cy="154" r="12" fill="#b5651d"/><text x="524" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+<g transform="translate(598,136)"><rect width="224" height="184" rx="14" fill="#fff" stroke="#c7d3e3" filter="url(#sh)"/>
 <g transform="translate(18,16)" stroke="#24415f" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="0" y="0" width="50" height="32" rx="3"/><line x1="15" y1="42" x2="35" y2="42"/><line x1="25" y1="32" x2="25" y2="42"/><path d="M9 22 L17 12 L25 19 L33 9 L41 16"/></g>
 <text x="18" y="98" font-size="21" font-weight="700" fill="#1f2937">Edge renderer</text>
 <text x="18" y="124" font-size="17" fill="#4b5563">Unity 6 · V3C decoder</text>
 <text x="18" y="147" font-size="17" fill="#4b5563">RTX 4070 · ALVR server</text>
 <text x="18" y="168" font-size="15" fill="#6b7280">per-GOF telemetry → ψ</text>
 </g>
-<circle cx="768" cy="154" r="12" fill="#24415f"/><text x="768" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">3</text>
-<g transform="translate(830,136)"><rect width="138" height="184" rx="14" fill="#fff" stroke="#c7d3e3" filter="url(#sh)"/>
+<circle cx="804" cy="154" r="12" fill="#24415f"/><text x="804" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+<g transform="translate(858,136)"><rect width="138" height="184" rx="14" fill="#fff" stroke="#c7d3e3" filter="url(#sh)"/>
 <text x="69.0" y="30" font-size="17" font-weight="700" fill="#1f2937" text-anchor="middle">gNodeB</text>
 <rect x="16" y="46" width="106" height="34" rx="8" fill="#eef3f9" stroke="#c7d3e3"/>
 <text x="69.0" y="68" font-size="17" font-weight="700" fill="#24415f" text-anchor="middle">NC</text>
@@ -53,59 +54,54 @@
 <rect x="16" y="134" width="106" height="34" rx="8" fill="#eef3f9" stroke="#c7d3e3"/>
 <text x="69.0" y="156" font-size="17" font-weight="700" fill="#24415f" text-anchor="middle">RU</text>
 </g>
-<circle cx="950" cy="154" r="12" fill="#24415f"/><text x="950" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">4</text>
-<g transform="translate(1022,136)"><rect width="182" height="184" rx="14" fill="#fff" stroke="#dcd3c2" filter="url(#sh)"/>
+<circle cx="978" cy="154" r="12" fill="#24415f"/><text x="978" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+<g transform="translate(1050,136)"><rect width="154" height="184" rx="14" fill="#fff" stroke="#dcd3c2" filter="url(#sh)"/>
 <g transform="translate(18,16)" stroke="#5a4a2b" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10 h44 a6 6 0 0 1 6 6 v18 a6 6 0 0 1 -6 6 h-11 l-7 -8 h-8 l-7 8 h-11 a6 6 0 0 1 -6 -6 v-18 a6 6 0 0 1 6 -6 z"/><line x1="4" y1="22" x2="-3" y2="22"/><line x1="54" y1="22" x2="61" y2="22"/></g>
-<text x="18" y="98" font-size="21" font-weight="700" fill="#1f2937">Meta Quest 3</text>
+<text x="18" y="98" font-size="21" font-weight="700" fill="#1f2937">Quest 3</text>
 <text x="18" y="124" font-size="17" fill="#4b5563">5G USB dongle</text>
-<text x="18" y="147" font-size="17" fill="#4b5563">ACR rating (P.910)</text>
-<text x="18" y="168" font-size="15" fill="#6b7280">no Wi-Fi last mile</text>
+<text x="18" y="147" font-size="17" fill="#4b5563">ACR rating</text>
+<text x="18" y="168" font-size="15" fill="#6b7280">no Wi-Fi</text>
 </g>
 <circle cx="1186" cy="154" r="12" fill="#5a4a2b"/><text x="1186" y="159" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">5</text>
-<line x1="244" y1="180" x2="298" y2="180" stroke="#3b4252" stroke-width="2.6" marker-end="url(#arr)"/>
-<text x="271.0" y="170" font-size="14" fill="#3b4252" text-anchor="middle">QUIC</text>
-<line x1="524" y1="180" x2="564" y2="180" stroke="#3b4252" stroke-width="2.6" marker-end="url(#arr)"/>
-<line x1="788" y1="180" x2="828" y2="180" stroke="#b5651d" stroke-width="2.6" marker-end="url(#arra)"/>
-<text x="808.0" y="170" font-size="14" fill="#b5651d" text-anchor="middle" font-weight="700">ALVR</text>
-<line x1="968" y1="287" x2="1020" y2="287" stroke="#5a4a2b" stroke-width="2.6" marker-end="url(#arra)"/>
-<text x="994.0" y="277" font-size="14" fill="#5a4a2b" text-anchor="middle" font-weight="700">5G NR</text>
-<line x1="411" y1="320" x2="411" y2="344" stroke="#c7d3e3" stroke-width="2.5"/>
-<g transform="translate(300,348)"><rect width="486" height="36" rx="9" fill="#fff" stroke="#c7d3e3"/><rect width="40" height="36" rx="9" fill="#24415f"/>
+<line x1="274" y1="180" x2="304" y2="180" stroke="#3b4252" stroke-width="2.6" marker-end="url(#arr)"/>
+<line x1="544" y1="180" x2="596" y2="180" stroke="#24415f" stroke-width="2.6" marker-end="url(#arrb)"/>
+<text x="570.0" y="170" font-size="14" fill="#24415f" text-anchor="middle" font-weight="700">QUIC</text>
+<line x1="824" y1="180" x2="856" y2="180" stroke="#b5651d" stroke-width="2.6" marker-end="url(#arra)"/>
+<text x="840.0" y="170" font-size="14" fill="#b5651d" text-anchor="middle" font-weight="700">ALVR</text>
+<line x1="996" y1="287" x2="1048" y2="287" stroke="#5a4a2b" stroke-width="2.6" marker-end="url(#arra)"/>
+<text x="1022.0" y="277" font-size="14" fill="#5a4a2b" text-anchor="middle" font-weight="700">5G NR</text>
+<line x1="424" y1="320" x2="424" y2="344" stroke="#d1d5db" stroke-width="2.5"/>
+<g transform="translate(36,348)"><rect width="506" height="36" rx="9" fill="#fff" stroke="#d1d5db"/><rect width="40" height="36" rx="9" fill="#24415f"/>
 <text x="20" y="25" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">A</text>
 <text x="54" y="25" font-size="17" font-weight="700" fill="#1f2937">Clean</text>
-<text x="214" y="25" font-size="15" fill="#4b5563">no loss, no delay</text>
-<text x="470" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">RA · GOF 32</text></g>
-<g transform="translate(300,392)"><rect width="486" height="36" rx="9" fill="#fff" stroke="#c7d3e3"/><rect width="40" height="36" rx="9" fill="#b5651d"/>
+<text x="224" y="25" font-size="15" fill="#4b5563">no loss, no delay</text>
+<text x="490" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">RA · GOF 32</text></g>
+<g transform="translate(36,392)"><rect width="506" height="36" rx="9" fill="#fff" stroke="#d1d5db"/><rect width="40" height="36" rx="9" fill="#b5651d"/>
 <text x="20" y="25" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">B</text>
 <text x="54" y="25" font-size="17" font-weight="700" fill="#1f2937">Loss</text>
-<text x="214" y="25" font-size="15" fill="#4b5563">loss only</text>
-<text x="470" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
-<g transform="translate(300,436)"><rect width="486" height="36" rx="9" fill="#fff" stroke="#c7d3e3"/><rect width="40" height="36" rx="9" fill="#b5651d"/>
+<text x="224" y="25" font-size="15" fill="#4b5563">loss only</text>
+<text x="490" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
+<g transform="translate(36,436)"><rect width="506" height="36" rx="9" fill="#fff" stroke="#d1d5db"/><rect width="40" height="36" rx="9" fill="#b5651d"/>
 <text x="20" y="25" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">C</text>
 <text x="54" y="25" font-size="17" font-weight="700" fill="#1f2937">Latency</text>
-<text x="214" y="25" font-size="15" fill="#4b5563">delay only</text>
-<text x="470" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
-<g transform="translate(300,480)"><rect width="486" height="36" rx="9" fill="#fff" stroke="#c7d3e3"/><rect width="40" height="36" rx="9" fill="#8a3b12"/>
+<text x="224" y="25" font-size="15" fill="#4b5563">delay only</text>
+<text x="490" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
+<g transform="translate(36,480)"><rect width="506" height="36" rx="9" fill="#fff" stroke="#d1d5db"/><rect width="40" height="36" rx="9" fill="#8a3b12"/>
 <text x="20" y="25" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">D</text>
 <text x="54" y="25" font-size="17" font-weight="700" fill="#1f2937">Loss + latency</text>
-<text x="214" y="25" font-size="15" fill="#4b5563">both</text>
-<text x="470" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
-<g transform="translate(830,348)"><rect width="138" height="168" rx="12" fill="#fff" stroke="#c7d3e3"/>
-<text x="14" y="28" font-size="15" fill="#24415f" font-weight="700">Slices</text>
-<text x="14" y="48" font-size="15" fill="#4b5563">2×2 factorial</text>
-<text x="14" y="68" font-size="15" fill="#4b5563">on B, C, D at a</text>
-<text x="14" y="88" font-size="15" fill="#4b5563">fixed encoder.</text>
-<text x="14" y="108" font-size="15" fill="#4b5563">A anchors the</text>
-<text x="14" y="128" font-size="15" fill="#4b5563">clean ceiling</text>
-<text x="14" y="148" font-size="15" fill="#4b5563">(Slice A).</text>
+<text x="224" y="25" font-size="15" fill="#4b5563">both</text>
+<text x="490" y="25" font-size="17" font-weight="700" fill="#24415f" text-anchor="end">LDP · GOF 4</text></g>
+<g transform="translate(598,348)"><rect width="398" height="168" rx="12" fill="#fff" stroke="#c7d3e3"/>
+<text x="18" y="30" font-size="17" font-weight="700" fill="#24415f">Design</text>
+<text x="18" y="56" font-size="15" fill="#4b5563">Slices B, C, D form a 2×2 factorial on loss and</text>
+<text x="18" y="77" font-size="15" fill="#4b5563">latency at a fixed encoder (LDP, GOF 4); Slice A</text>
+<text x="18" y="98" font-size="15" fill="#4b5563">anchors the clean ceiling. Stage 2 is identical</text>
+<text x="18" y="119" font-size="15" fill="#4b5563">in every condition, so any MOS difference</text>
+<text x="18" y="140" font-size="15" fill="#4b5563">originates in the Stage 1 path, and ψ is measured</text>
+<text x="18" y="161" font-size="15" fill="#4b5563">from the renderer's per-GOF deadline telemetry.</text>
 </g>
-<text x="36" y="370" font-size="15" fill="#4b5563">Dynamic point cloud</text>
-<text x="36" y="390" font-size="15" fill="#4b5563">sequences: Soldier,</text>
-<text x="36" y="410" font-size="15" fill="#4b5563">Longdress, ThaiDancer</text>
-<text x="36" y="430" font-size="15" fill="#4b5563">(8iVFB, vox10/12),</text>
-<text x="36" y="450" font-size="15" fill="#4b5563">TMC2 v25 + x265.</text>
-<text x="1022" y="370" font-size="15" fill="#4b5563">Stage 2 is identical in</text>
-<text x="1022" y="390" font-size="15" fill="#4b5563">every condition, so any</text>
-<text x="1022" y="410" font-size="15" fill="#4b5563">MOS difference originates</text>
-<text x="1022" y="430" font-size="15" fill="#4b5563">in the Stage 1 path.</text>
+<text x="1050" y="372" font-size="15" fill="#4b5563">ITU-T P.910 ACR</text>
+<text x="1050" y="393" font-size="15" fill="#4b5563">N = 50 participants</text>
+<text x="1050" y="414" font-size="15" fill="#4b5563">rated attribute:</text>
+<text x="1050" y="435" font-size="15" fill="#4b5563">playback smoothness</text>
 </svg>
