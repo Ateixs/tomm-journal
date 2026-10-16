@@ -90,11 +90,20 @@ rest are experimental settings.
 
 \paragraph{Two consequences.}
 Equation~\eqref{eq:delay} contains the model's two structural claims.
-First, delay and loss do not add in their effect on $\tlf$: each alone
-is absorbed while $2\ell < S_k$ and $n_k p\,R < S_k$, and a miss
-occurs only when their sum exceeds the slack, so the response is a
-threshold in the combined load rather than a sum of two responses.
-This is the source of the $A \approx B \approx C \gg D$ prediction.
+First, each impairment degrades $\tlf$ on its own, and the two do not
+add. For a single unit a miss is a threshold event in the combined
+load $2\ell + L_k R$ against the slack $S_k$; across a session the
+slack, size and loss count vary from unit to unit, so the
+session-level $\tlf$ is a smooth, convex function of the load: added
+latency alone pushes the units with the least slack over their
+deadlines, loss alone does the same for the units that draw the most
+recovery, and when both are present every unit faces the sum of the
+two, so the units that each impairment alone would have spared are
+now lost too. The model therefore predicts graded single-factor
+effects and a super-additive combination: $\mos_A > \mos_B$,
+$\mos_A > \mos_C$, and $(\mos_A - \mos_D) > (\mos_A - \mos_B) +
+(\mos_A - \mos_C)$. An additive form such as Eq.~\eqref{eq:udora}
+cannot produce the last inequality.
 Second, the \gof size $G$ enters on both sides of the inequality. A
 larger unit has more packets at risk ($n_k \propto G$) and so more loss
 events per unit, but it also has proportionally more slack ($S_k$
@@ -164,12 +173,15 @@ Because $\tlf$ is derived rather than fitted, the model commits to
 three predictions before any rating is collected, and the evaluation of
 Section~\ref{sec:results} is organised around them.
 
-\emph{Latency and loss interact.} Both impairments consume the same
-slack in Eq.~\eqref{eq:delay}, so their effects on \mos cannot be
-additive as Eq.~\eqref{eq:udora} assumes. Across the
-four slices of Section~\ref{sec:design-network} the model predicts
-$A \approx B \approx C \gg D$: either impairment alone is absorbed by
-the slack, and only their combination exhausts it.
+\emph{Latency and loss each degrade quality, and together they
+degrade it more than additively.} Both impairments consume the same
+per-unit slack in Eq.~\eqref{eq:delay}, so each alone produces a
+measurable temporal loss and a \mos drop, and their combination
+produces a drop larger than the sum of the two, which an additive form
+such as Eq.~\eqref{eq:udora} cannot reproduce. Across the four slices
+of Section~\ref{sec:design-network} the model predicts
+$\mos_A > \mos_B,\, \mos_C > \mos_D$ with
+$(\mos_A - \mos_D) > (\mos_A - \mos_B) + (\mos_A - \mos_C)$.
 
 \emph{Delivery-unit structure, not loss magnitude, governs
 resilience.} For fixed delay and loss, $\tlf$ depends on the \gof size
