@@ -89,7 +89,7 @@ Category~2 of the \vpcc common test conditions~\cite{vpccctc}, are
 used: Longdress (vox10, $\approx$0.85\,M points/frame), Soldier
 (vox10, $\approx$1.08\,M) and ThaiDancer (vox12, $\approx$3.13\,M), each
 300 frames at \SI{30}{fps}. Sequences are encoded with \gls{tmc2}
-v25~\cite{tmc2} using x265 for the geometry and attribute videos and
+v25~\cite{tmc2} using x265~\cite{x265} for the geometry and attribute videos and
 \gls{hm} for the losslessly coded occupancy maps (Table~\ref{tab:encoder}).
 Attribute QPs are chosen per sequence to place all three in the same
 \gls{psnr}$_Y$ band (\SIrange{34}{39}{dB}), so that differences across
@@ -178,7 +178,10 @@ in Eq.~\eqref{eq:tlf}.
 
 \paragraph{Protocol.}
 The study follows ITU-T P.910~\cite{p910} with the \gls{acr} method on
-the five-point scale (5~Excellent to 1~Bad). The rated attribute is
+the five-point scale (5~Excellent to 1~Bad); a single-stimulus method
+matches how a viewer consumes a stream and needs no reference
+presentation inside the headset, unlike the double-stimulus methods of
+ITU-R BT.500~\cite{bt500}. The rated attribute is
 stated to participants as the \emph{smoothness of playback} of the
 figure in front of them, not its visual fidelity; the instruction and
 the training clips make the distinction explicit, because the
