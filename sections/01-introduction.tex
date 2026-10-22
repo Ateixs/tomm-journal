@@ -40,9 +40,7 @@ al.~\cite{qoeholographic,udora2026tmm}, fits an exponential-in-delay,
 linear-in-loss regression per quality level and reaches held-out
 correlations of 0.57--0.66; it describes its data but not \emph{why}
 delay and loss degrade \qoe, and so cannot transfer to a new \gof size,
-encoder or network. Subjective \vpcc studies, meanwhile, inject loss
-offline or assess outside fully occlusive
-\gls{vr}~\cite{dumic2023,nguyen2023,Cox2023}.
+encoder or network.
 
 We present \crystal, a mechanistic two-layer \qoe model for \vpcc
 streaming over reliable \quic. Layer~1, which has no perceptual
@@ -56,52 +54,65 @@ Layer~2 maps $\tlf$ to opinion score with one constant,
 \end{equation}
 where $\qc$ is the clean-reference ceiling of each content and $\alpha$
 is the only fitted parameter. The model claims that, under reliable
-transport, latency and loss act on \qoe only through $\tlf$. We test it
-with an ITU-T P.910 \gls{acr} study ($N=50$) on a private \fiveg testbed
-that streams \vpcc over \gls{http3} to an edge renderer and casts the
-rendered frames to Meta Quest~3 headsets, using a $2\times2$ factorial
-design that separates latency, loss and their interaction at a fixed
-encoder configuration. The contributions are:
-\begin{enumerate}[leftmargin=*,nosep]
-  \item \textbf{A mechanistic model} whose transport layer is
-        parameter-free and whose perceptual layer has one constant,
+transport, latency and loss act on \qoe only through $\tlf$. We test it on
+\mosaic~\cite{mosaic2026}, an end-to-end pipeline that streams \vpcc
+over \gls{http3} to an edge renderer colocated with a private \fiveg
+network and casts the rendered frames to a Meta Quest~3, with an ITU-T
+P.910 \gls{acr} study ($N=50$) whose $2\times2$ factorial design
+separates latency, loss and their interaction at a fixed encoder
+configuration. The contributions are:
+\begin{itemize}[leftmargin=*,nosep]
+  \item[--] \textbf{An end-to-end pipeline for \vpcc over reliable \quic
+        to a \gls{vr} headset}, documented in full: an \gls{hm}-compatible
+        x265 shim for tractable \gls{tmc2} encoding, a deadline-paced
+        \gls{http3} fetcher replacing the \gls{dash} client of the
+        5G-MAG decoder, a zero-copy OpenGL-to-DirectX bridge that
+        bypasses Unity's OpenXR path, and a 5G-capable Meta Quest~3
+        (Section~\ref{sec:system}).
+  \item[--] \textbf{An encoding campaign} that characterises the
+        rate--distortion behaviour of random-access and low-delay
+        configurations for three \gls{mpeg} test sequences and selects
+        bitrate-matched operating points (Section~\ref{sec:sys-content}).
+  \item[--] \textbf{\crystal}, a mechanistic model whose transport layer
+        is parameter-free and whose perceptual layer has one constant,
         replacing per-quality-level regression coefficients with a
-        single explanatory variable, $\tlf$.
-  \item \textbf{A pre-registered factorial evaluation} showing that
+        single explanatory variable, $\tlf$ (Section~\ref{sec:model}).
+  \item[--] \textbf{A pre-registered factorial study} showing that
         latency and loss each degrade perceived smoothness and together
         degrade it $1.61\times$ more than the sum of the two, refuting
         the additivity of prior regressions; that \gof structure rather
         than loss magnitude governs resilience, a larger low-delay \gof
         being more robust than a smaller one; and that a single
-        $\alpha$ \todo{does / does not} predict held-out conditions.
-  \item \textbf{A transport characterisation and dataset}: per-\gof
-        stall and deadline-miss measurements of reliable \quic under
-        controlled impairment, and \todo{$N$} ratings over three
-        \gls{mpeg} test sequences collected in \gls{vr} with a
-        reproducible rating application.
-\end{enumerate}
+        $\alpha$ \todo{does / does not} predict held-out conditions
+        (Sections~\ref{sec:design} and~\ref{sec:results}), with
+        per-\gof transport logs aligned to every rating.
+\end{itemize}
 
 \blind{%
-This article extends two conference papers: \cite{mosaic2026}
-introduced the \vpcc-over-\quic pipeline and a three-tier study
-($N=20$) that paired impairment with encoder configuration, and
-\cite{vquest2026} characterised the transport signatures of latency and
-loss for a frame-independent codec; earlier testbed descriptions
-appeared as demonstrations~\cite{bestdemo25,nfvsdn24}. Neither proposed
-a model or isolated \gof structure.%
+This article extends the conference paper~\cite{mosaic2026}, which
+introduced the pipeline and a three-tier study ($N=20$) that paired
+impairment with encoder configuration. The article adds the full
+pipeline and encoding campaign, \crystal, a counterbalanced factorial
+study in place of the confounded tiers, and the link from per-\gof
+telemetry to ratings through $\tlf$. A second conference
+paper~\cite{vquest2026} characterised the transport signatures of
+latency and loss for a frame-independent codec; earlier testbed
+descriptions appeared as demonstrations~\cite{bestdemo25,nfvsdn24}.%
 }{%
-This article extends two conference papers by the authors:
-\mosaic~\cite{mosaic2026} introduced the \vpcc-over-\quic pipeline and
-a three-tier study ($N=20$) that paired impairment with encoder
-configuration, and \vquest~\cite{vquest2026} characterised the
-transport signatures of latency and loss for a frame-independent codec;
-earlier testbed descriptions appeared as
-demonstrations~\cite{bestdemo25,nfvsdn24}. Neither proposed a model or
-isolated \gof structure.%
+This article extends our conference paper~\cite{mosaic2026}, which
+introduced \mosaic and a three-tier study ($N=20$) that paired
+impairment with encoder configuration. The article adds the full
+pipeline and encoding campaign, \crystal, a counterbalanced factorial
+study in place of the confounded tiers, and the link from per-\gof
+telemetry to ratings through $\tlf$. \vquest~\cite{vquest2026}
+characterised the transport signatures of latency and loss for a
+frame-independent codec; earlier testbed descriptions appeared as
+demonstrations~\cite{bestdemo25,nfvsdn24}.%
 }
 Section~\ref{sec:related} reviews related work,
 Section~\ref{sec:model} derives the model and its predictions,
-Section~\ref{sec:system} describes the testbed and experimental design,
+Section~\ref{sec:system} describes the pipeline,
+Section~\ref{sec:design} the experimental design,
 Section~\ref{sec:results} reports the results,
 Section~\ref{sec:discussion} discusses implications and limitations,
 and Section~\ref{sec:conclusion} concludes.
