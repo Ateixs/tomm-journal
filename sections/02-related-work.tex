@@ -63,9 +63,8 @@ studies.
 
 Surveys of immersive media delivery describe the pipeline from capture
 to \gls{6dof} rendering and identify \gls{qoe} under network impairment
-as an open problem~\cite{Immersivevideo,Viola2023,shen2023toward,garcia22};
-Liu et al.~\cite{pcstreaming21} and Enenche et al.~\cite{metaverseroad25}
-note that measuring the \gls{qoe} of point-cloud streaming is still in
+as an open problem~\cite{Immersivevideo,Viola2023,shen2023toward};
+Liu et al.~\cite{pcstreaming21} note that measuring the \gls{qoe} of point-cloud streaming is still in
 its infancy, and Mozhganfar et al.~\cite{mozhganfar2026noms} classify
 the \gls{qoe} models that do exist for volumetric streaming by input
 factors and modelling strategy. The standards bodies have catalogued
@@ -81,11 +80,8 @@ et al.~\cite{rudolph2025rabbit} transcode \vpcc streams in real time by
 re-encoding only the video sub-streams; Shi et al.~\cite{qv424} add
 viewpoint-aware tiling to \vpcc using the encoder's intermediate
 outputs, with a \gls{qoe} model trained on VOLVQAD ratings.
-Codec-agnostic systems exploit inter-frame correlation~\cite{hermes},
-neural super-resolution~\cite{yuzu}, codec-independent progressive
-partitions~\cite{p2vs}, multiple-description coding over
-\gls{webrtc}~\cite{mathias24} and multi-codec rate
-adaptation~\cite{codec}. These works evaluate with objective metrics or
+Codec-agnostic systems exploit inter-frame correlation~\cite{hermes}
+or neural super-resolution~\cite{yuzu}. These works evaluate with objective metrics or
 simulation and hold the encoder configuration, in particular the \gof
 length, fixed.
 
@@ -103,12 +99,9 @@ transmission for live volumetric video, reporting frame-rate and
 objective-quality gains. A second response handles loss below the
 transport: Qian et al.\ duplicate packets in eBPF between network nodes
 so that volumetric frames meet their deadlines despite path
-instability~\cite{qian2024ebpf}, and steer live volumetric flows across
-paths according to declared user intent~\cite{qian2024intent}. Thomas
-and Xylomenos~\cite{thomas2025} stream point clouds with forward error
-correction on a real 5G testbed without \quic, and Fiorina et
-al.~\cite{fiorina2025} estimate \gls{qoe} for multicast point-cloud
-streaming over 5G with an objective model. The one recent pipeline
+instability~\cite{qian2024ebpf}, and Thomas and
+Xylomenos~\cite{thomas2025} stream point clouds with forward error
+correction on a real 5G testbed without \quic. The one recent pipeline
 that keeps production \quic unmodified, Sidhu and Bentaleb's
 \gls{dash}-over-\quic delivery of \gpcc~\cite{gpcc2026quic}, finds that
 \quic implementation choices materially affect delivery but evaluates
@@ -143,16 +136,14 @@ from 40 participants viewing \vpcc, \gpcc and CWI-PCL content with
 \gls{6dof} in \gls{vr}. Alexiou et al.~\cite{Alexiou2023} review the
 methodology; Ak et al.~\cite{ak2024basics} benchmark objective metrics
 on a broad static corpus, where \pcqm~\cite{pcqm} is among the most
-stable across codecs, and Liu et al.~\cite{liu2021tip} fit a
-reduced-reference perceptual model to \vpcc quantisation parameters.
+stable across codecs.
 
 Few studies vary the network. Dumic and da Silva Cruz~\cite{dumic2023}
 inject \SIrange{0.5}{2}{\percent} packet loss into \vpcc sub-bitstreams
 before decoding and report \mos drops exceeding one scale unit at
 \SI{0.5}{\percent}, with geometry and occupancy losses far more
-damaging than attribute losses; Wu et al.~\cite{wu2021nossdav} study
-distortion and concealment under loss. In both, loss is applied to the
-bitstream rather than produced by a transport, so the stimulus is
+damaging than attribute losses. Loss is applied to the bitstream
+rather than produced by a transport, so the stimulus is
 corruption rather than delay, and the content is shown as 2D video.
 Our earlier study~\cite{mosaic2026} rated \vpcc in head-mounted
 displays under real \quic impairment but paired each network tier with
@@ -183,8 +174,7 @@ al.~\cite{reichl2010} argue for a logarithmic law, and the two agree in
 the operating region of interest~\cite{alreshoodi2013}. For buffered
 video the impairment that matters is stalling: Ho{\ss}feld et
 al.~\cite{hossfeld2011youtube} find an exponential dependence of \mos
-on the number and length of stalling events, later separated from
-initial delay~\cite{hossfeld2012initial}, and the survey by Seufert et
+on the number and length of stalling events, and the survey by Seufert et
 al.~\cite{seufert2015survey} consolidates the stalling ratio as the
 established temporal \gls{qoe} variable for HTTP streaming. ITU-T
 P.1203~\cite{itu_p1203} standardises that view, folding initial delay,
@@ -202,7 +192,7 @@ on 2D-video conventions and evaluated in simulation, and Nguyen et
 al.~\cite{qoedynamicpc} adapt P.1203 to dynamic point clouds in
 \gls{ar} with the parameters of the 2D standard. Feature-based models
 map content or device features to quality without a network variable:
-Van Damme et al.~\cite{vandamme2022,vandamme2024} train a
+Van Damme et al.~\cite{vandamme2024} train a
 clustering-based psychometric model on no-reference image features for
 \vpcc video at video, \gof and frame granularity, and Zhang et
 al.~\cite{zhang2019towards} build a fuzzy inference system for the
