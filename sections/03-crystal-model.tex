@@ -12,6 +12,48 @@ compression fidelity, which is fixed per sequence and reported through
 combination of fidelity and smoothness. The rated attribute in the
 subjective study is smoothness of playback.
 
+\subsection{Delivery Unit and Loss Recovery}
+\label{sec:model-unit}
+Two properties of the stream and the transport determine how a network
+impairment reaches the viewer. The first is the delivery unit. \vpcc,
+the principal component of ISO/IEC 23090-5~\cite{v3c,vpccgraziosi},
+projects a dynamic point cloud into geometry, attribute and occupancy
+atlases coded as ordinary video with \gls{hevc}~\cite{hevc,tmc2}, and so
+inherits the video codec's prediction structure: frames are coded in
+\glspl{gof}, either \gls{ra} with I-, P- and B-frames and a \gof of 32,
+or \gls{ldp} with I- and P-frames and \gofs of 16 or
+4~\cite{vpccctc,hmctc}. A \gof must be received in full before any of
+its frames can be reconstructed, and in a streaming deployment it
+carries a presentation deadline. The \gof is therefore the
+\emph{delivery unit}, and its size is the structural variable of the
+model: a smaller \gof puts fewer packets at risk but leaves a tighter
+deadline budget.
+
+The second is loss recovery. Each \gof is fetched as one HTTP object
+over \gls{http3}~\cite{rfc9114}, so every packet of a unit travels on
+one \quic stream~\cite{rfc9000}. Standard \quic never reuses packet
+numbers and declares a packet lost either when one at least
+$k_{\mathrm{PacketThreshold}}=3$ later is acknowledged or, if no later
+acknowledgement arrives, when a \gls{pto} expires~\cite{rfc9002}:
+\begin{equation}
+  \mathrm{PTO} = \mathrm{sRTT} + \max(4\,\mathrm{RTT}_{\mathrm{var}},
+  k_{\mathrm{granularity}}) + \mathrm{max\_ack\_delay}.
+  \label{eq:pto}
+\end{equation}
+A loss therefore costs at least one round trip, and a full \gls{pto}
+when the lost packet is among the last of the unit, and each recovery
+is followed by a congestion-window reduction that persists into later
+transfers. Because \quic is reliable, the decoder never receives an
+incomplete \gof: loss becomes \emph{delay}, and delay becomes a
+\emph{stall} when the unit misses its deadline. Our measurements show
+the two impairments leave distinct signatures, added latency shifting
+the delivery-time distribution and loss expanding its
+tail~\cite{vquest2026}, and that the per-\gof deadline-miss rate
+correlates only partially with subjective quality ($\rho = -0.34$)
+because a missed \gof of 4 frames and one of 16 frames remove different
+durations of content~\cite{mosaic2026}. The temporal loss fraction
+defined next closes that gap.
+
 \subsection{Layer 1: Transport Model}
 \label{sec:model-layer1}
 
