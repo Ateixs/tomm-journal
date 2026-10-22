@@ -1,163 +1,107 @@
 \section{Introduction}
 \label{sec:intro}
 
-The trajectory from \fiveg through 5G-Advanced to \gls{6g} is increasingly
-defined by immersive applications~\cite{liberg2024,shen2023toward}:
-3GPP and ITU-R list immersive and extended-reality services among the
-primary usage scenarios of these generations~\cite{3gpp22261,itur-m2160},
-and mobile video traffic, already 76\% of a monthly volume past
-\SI{200}{EB}, is projected to more than double by
-2031~\cite{mobility25nov}. Each previous generation expanded not only
-data rates but the complexity of the media it carried, from analogue
-voice in 1G to the ubiquitous 2D video of 4G; the media class that
-motivates the latency, throughput and reliability targets of 6G is
-immersive media streaming for \gls{vr}: volumetric content captured
-from a real scene, transmitted, and reproduced in a fully occlusive
-\gls{hmd} with \gls{6dof}, for telepresence, remote collaboration,
-education and training~\cite{Immersivevideo,Viola2023}.
+Immersive applications increasingly define the trajectory from \fiveg
+to \gls{6g}~\cite{liberg2024,shen2023toward}: 3GPP and ITU-R list
+immersive and extended-reality services among the primary usage
+scenarios of these generations~\cite{3gpp22261,itur-m2160}, and mobile
+video traffic is projected to more than double by
+2031~\cite{mobility25nov}. The most demanding of these services is
+immersive media streaming for \gls{vr}: volumetric content captured from
+a real scene and reproduced in an \gls{hmd} with
+\gls{6dof}~\cite{Immersivevideo,Viola2023}. Its dominant format, the
+dynamic point cloud, requires gigabits per second
+uncompressed~\cite{pcstreaming21}, and \gls{mpeg}'s
+\gls{vpcc}~\cite{v3c,vpccgraziosi} is the reference codec for dense,
+dynamic content. \vpcc codes geometry, attribute and occupancy atlases
+with \gls{hevc}~\cite{hevc} and inherits its temporal prediction
+structure: the bitstream is organised in \glspl{gof}, each of which must
+be received in full before any of its frames can be decoded. Because
+standalone \glspl{hmd} cannot decode \vpcc in real time, deployments
+render at an edge server and cast the frames to the headset, so the
+path from the content origin to the edge renderer is where network
+impairment reaches the content.
 
-The volumetric format at the centre of these applications is the
-dynamic point cloud: a sequence of unordered 3D points with colour
-attributes, requiring gigabits per second
-uncompressed~\cite{pcstreaming21}.
-Practical delivery depends on compression, and the \gls{mpeg}
-\gls{vpcc} codec, a major component of the \gls{v3c} standard ISO/IEC
-23090-5~\cite{v3c,vpccgraziosi}, is the reference choice for dense,
-dynamic content: it represents the point cloud as geometry, attribute
-and occupancy 2D atlases coded with conventional video codecs such as
-\gls{hevc}~\cite{hevc}, and so inherits hardware acceleration and decades of
-video-codec engineering. It also inherits the video codec's temporal
-prediction structure. A \gls{vpcc} bitstream is organised in \glspl{gof},
-and a \gls{gof} is the unit that must be received in full
-before any of its frames can be decoded and rendered. Because current
-standalone \glspl{hmd} cannot decode \gls{vpcc} in real
-time, practical deployments render at an edge server near the radio
-access network and cast the rendered stereo frames to the headset;
-the transport path between the content origin and the edge renderer is
-where network impairment reaches the content.
+Volumetric streaming research has largely assumed lossy datagram
+transport or partially reliable \quic variants that drop stale
+data~\cite{ravuri2023,haseeb2025}. Production systems run neither: the
+\quic shipped in browsers, content delivery networks and mobile
+operating systems is fully reliable~\cite{rfc9000}. No bitstream reaches
+the decoder incomplete; loss becomes delay through retransmission and
+congestion-window reduction, and the \gof amplifies that delay, since
+one late packet stalls the whole unit. The perceptual consequence is
+temporal rather than geometric: freezes and frame skips, not holes in
+the surface. Our earlier work showed that latency and loss leave
+distinct transport signatures~\cite{vquest2026}, and that a \vpcc slice
+with \emph{lower} loss but a tighter \gof deadline can score lower
+than one with higher loss~\cite{mosaic2026}. Existing \qoe models do not
+capture this regime. The closest, by Udora et
+al.~\cite{qoeholographic,udora2026tmm}, fits an exponential-in-delay,
+linear-in-loss regression per quality level and reaches held-out
+correlations of 0.57--0.66; it describes its data but not \emph{why}
+delay and loss degrade \qoe, and so cannot transfer to a new \gof size,
+encoder or network. Subjective \vpcc studies, meanwhile, inject loss
+offline or assess outside fully occlusive
+\gls{vr}~\cite{dumic2023,nguyen2023,Cox2023}.
 
-\paragraph{The transport reality.}
-Volumetric streaming research has largely assumed either lossy
-datagram transport, in which packet loss manifests as missing
-geometry, or research variants of \quic with partial reliability, in
-which stale data can be deliberately dropped~\cite{ravuri2023,haseeb2025}.
-Neither is what production systems run. The \quic that ships in
-browsers, content delivery networks and mobile operating systems is
-fully reliable~\cite{rfc9000}: every lost packet is detected,
-retransmitted and delivered in order. Under this transport no
-bitstream ever reaches the decoder incomplete. Loss is converted into
-delay by retransmission and congestion-window reduction, and that
-delay is amplified by the \gof structure, since one late packet stalls
-the entire \gof it belongs to. The authors' earlier measurements
-showed the two impairments to have distinct transport signatures,
-added latency shifting the whole delivery-time distribution while loss
-expands its tail~\cite{vquest2026}, and showed on \vpcc that a slice
-with \emph{lower} loss but a tighter \gof deadline budget scores lower
-MOS than a slice with higher loss~\cite{mosaic2026}. The perceptual
-consequence of loss under reliable transport is therefore temporal,
-not geometric: the viewer sees freezes and frame skips, not holes in
-the surface. The \qoe literature has not
-modelled this regime.
-
-\paragraph{The modelling gap.}
-Network-aware \qoe models for volumetric media exist, but they are
-empirical. The closest, by Udora et al.~\cite{qoeholographic,
-udora2026tmm}, fits an exponential-in-delay,
-linear-in-loss regression with five coefficients per quality level to
-subjective scores collected on reliable transport, and reports held-out
-correlations of only 0.57--0.66. The model describes the data it was
-fitted to; it does not say \emph{why} delay and loss degrade \qoe, and
-so gives no principled route to a new encoder configuration, a new
-\gof size or a new network. Subjective studies of \vpcc, for their
-part, inject loss into bitstreams offline, replay simulated traces, or
-assess on 2D displays or \gls{ar} pass-through rather than in fully occlusive
-\gls{vr}~\cite{dumic2023,nguyen2023,Cox2023}; streaming systems for \vpcc
-report objective metrics and hold the encoder configuration
-fixed~\cite{rudolph2025rabbit,qv424} (Section~\ref{sec:related}).
-
-\paragraph{This article.}
 We present \crystal, a mechanistic two-layer \qoe model for \vpcc
-streaming over reliable \quic. Layer~1 is a transport model: it derives
-the \emph{temporal loss fraction} $\tlf$, the fraction of wall-clock
-time during which the renderer has no fresh \gof to show, from
-measurable transport quantities (delivery slack, round-trip time,
-loss-recovery cost and \gof size) and contains no perceptual free
-parameter. Layer~2 is a perceptual model with a single parameter:
+streaming over reliable \quic. Layer~1, which has no perceptual
+parameter, derives the \emph{temporal loss fraction} $\tlf$, the fraction
+of wall-clock time in which the renderer has no fresh \gof to show, from
+delivery slack, round-trip time, loss-recovery cost and \gof size.
+Layer~2 maps $\tlf$ to opinion score with one constant,
 \begin{equation}
   \crystalmodel,
   \label{eq:crystal-intro}
 \end{equation}
-where $\qc$ is the per-content clean-reference ceiling measured directly
-from impairment-free ratings and $\alpha$ is the only fitted perceptual
-constant. The model makes a strong, falsifiable claim: under reliable
-transport, latency and loss act on \qoe \emph{exclusively} through
-$\tlf$, mediated by the codec's delivery-unit structure. We calibrate
-and test \crystal with an ITU-T P.910 Absolute Category Rating study
-($N=50$) on an end-to-end private \fiveg testbed that delivers \vpcc
-content over \gls{http3} to an edge renderer under controlled impairment
-and casts the rendered frames to Meta Quest~3 headsets connected
-directly to the \fiveg network, using a $2\times2$ factorial design
-that isolates latency, loss and their interaction at a fixed encoder
-configuration, the decoupling that the three-tier design
-of~\cite{mosaic2026} could not provide.
-
-\paragraph{Contributions.}
-\begin{enumerate}[leftmargin=*]
-  \item \textbf{A mechanistic model.} A two-layer \qoe model for \vpcc
-        over reliable \quic in which the transport layer is
-        parameter-free and the perceptual layer has one constant,
-        replacing five empirically fitted coefficients per quality
-        level with a single explanatory variable, $\tlf$.
-  \item \textbf{A pre-registered factorial evaluation of the model's
-        predictions.} Latency and loss are each shown to degrade
-        perceived smoothness, and their combination to degrade it
-        $1.61\times$ more than the sum of the two, refuting the
-        additivity assumed by prior regressions; delivery-unit structure rather than loss
-        magnitude is shown to govern resilience, with the
-        counter-intuitive finding that a larger low-delay \gof is more
-        robust than a smaller one; and a single $\alpha$ \todo{is shown
-        to / fails to} predict held-out conditions without refitting.
-  \item \textbf{A loss-to-latency characterisation of reliable \quic
-        for \vpcc.} Per-\gof measurements of stall and deadline-miss
-        distributions under controlled impairment on a private \fiveg
-        testbed, relating packet loss, delay and \gof structure to
-        $\tlf$.
-  \item \textbf{A subjective dataset} of \todo{$N$} ratings over three
-        \gls{mpeg} CTC sequences and four impairment slices, collected with a
-        reproducible Unity-based rating application on the Meta
-        Quest~3.
+where $\qc$ is the clean-reference ceiling of each content and $\alpha$
+is the only fitted parameter. The model claims that, under reliable
+transport, latency and loss act on \qoe only through $\tlf$. We test it
+with an ITU-T P.910 \gls{acr} study ($N=50$) on a private \fiveg testbed
+that streams \vpcc over \gls{http3} to an edge renderer and casts the
+rendered frames to Meta Quest~3 headsets, using a $2\times2$ factorial
+design that separates latency, loss and their interaction at a fixed
+encoder configuration. The contributions are:
+\begin{enumerate}[leftmargin=*,nosep]
+  \item \textbf{A mechanistic model} whose transport layer is
+        parameter-free and whose perceptual layer has one constant,
+        replacing per-quality-level regression coefficients with a
+        single explanatory variable, $\tlf$.
+  \item \textbf{A pre-registered factorial evaluation} showing that
+        latency and loss each degrade perceived smoothness and together
+        degrade it $1.61\times$ more than the sum of the two, refuting
+        the additivity of prior regressions; that \gof structure rather
+        than loss magnitude governs resilience, a larger low-delay \gof
+        being more robust than a smaller one; and that a single
+        $\alpha$ \todo{does / does not} predict held-out conditions.
+  \item \textbf{A transport characterisation and dataset}: per-\gof
+        stall and deadline-miss measurements of reliable \quic under
+        controlled impairment, and \todo{$N$} ratings over three
+        \gls{mpeg} test sequences collected in \gls{vr} with a
+        reproducible rating application.
 \end{enumerate}
 
 \blind{%
-This article builds on two conference papers. The
-first~\cite{mosaic2026} introduced the end-to-end \vpcc-over-\quic
-pipeline and a three-tier operating-point study ($N=20$) in which
-network impairment and encoder configuration were paired, not
-separated. The second~\cite{vquest2026} characterised the transport
-signatures of latency and loss under \quic for a frame-independent
-codec and measured the corresponding perceptual thresholds. Earlier testbed
-descriptions appeared as demonstrations~\cite{bestdemo25,nfvsdn24}.
-Neither paper proposed a model, tested separability, or isolated \gof
-structure as the governing variable; all three are new here.%
+This article extends two conference papers: \cite{mosaic2026}
+introduced the \vpcc-over-\quic pipeline and a three-tier study
+($N=20$) that paired impairment with encoder configuration, and
+\cite{vquest2026} characterised the transport signatures of latency and
+loss for a frame-independent codec; earlier testbed descriptions
+appeared as demonstrations~\cite{bestdemo25,nfvsdn24}. Neither proposed
+a model or isolated \gof structure.%
 }{%
-This article consolidates and extends two conference papers by the
-authors. \mosaic~\cite{mosaic2026} introduced the end-to-end
-\vpcc-over-\quic pipeline on the same private \fiveg testbed and a
-three-tier operating-point study ($N=20$) in which network impairment
-and encoder configuration were paired, not separated.
-\vquest~\cite{vquest2026} characterised the transport signatures of
-latency and loss under \quic for a frame-independent codec and
-measured the corresponding perceptual thresholds; earlier testbed
-descriptions appeared as demonstrations~\cite{bestdemo25,nfvsdn24}.
-Neither proposed a model, tested separability, or isolated \gof
-structure as the governing variable; all three are new here.%
+This article extends two conference papers by the authors:
+\mosaic~\cite{mosaic2026} introduced the \vpcc-over-\quic pipeline and
+a three-tier study ($N=20$) that paired impairment with encoder
+configuration, and \vquest~\cite{vquest2026} characterised the
+transport signatures of latency and loss for a frame-independent codec;
+earlier testbed descriptions appeared as
+demonstrations~\cite{bestdemo25,nfvsdn24}. Neither proposed a model or
+isolated \gof structure.%
 }
-
-The remainder of the article is organised as follows.
-Section~\ref{sec:related} positions \crystal against prior \qoe models
-and volumetric streaming systems. Section~\ref{sec:model} derives the
-model and states the hypotheses. Section~\ref{sec:system} describes the testbed and the experimental
-design.
-Section~\ref{sec:results} reports the calibration
-and the evaluation of the model's predictions, Section~\ref{sec:discussion} discusses implications and threats
-to validity, and Section~\ref{sec:conclusion} concludes.
+Section~\ref{sec:related} reviews related work,
+Section~\ref{sec:model} derives the model and its predictions,
+Section~\ref{sec:system} describes the testbed and experimental design,
+Section~\ref{sec:results} reports the results,
+Section~\ref{sec:discussion} discusses implications and limitations,
+and Section~\ref{sec:conclusion} concludes.
