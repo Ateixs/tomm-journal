@@ -3,11 +3,19 @@
 
 This section reviews the literature on the components of the pipeline
 in Figure~\ref{fig:architecture} and on the modelling problem this
-article addresses. We first cover volumetric video delivery and the
-transports proposed for it, then subjective quality assessment of
-point-cloud video, and finally \gls{qoe} models for volumetric
-streaming. Table~\ref{tab:positioning} positions \crystal against the
-closest studies.
+article addresses: volumetric video delivery and the transports
+proposed for it, subjective assessment of point-cloud video and of
+temporal smoothness, and parametric \gls{qoe} models. The literature
+was assembled in three passes: a seed set from the bibliographies of
+the two conference studies this article extends and of the tutorial by
+van der Hooft et al.~\cite{Immersivevideo}, followed by backward
+snowballing; the identification of the closest prior model, Udora et
+al.~\cite{qoeholographic,udora2026tmm}, and an examination of the works
+citing it; and keyword searches of IEEE Xplore, the ACM Digital Library
+and Google Scholar for 2023--2026 publications on the same topics.
+Only peer-reviewed publications and standards were retained.
+Table~\ref{tab:positioning} positions \crystal against the closest
+studies.
 
 \begin{table}[!t]
   \caption{Positioning of \crystal against related work.
@@ -34,12 +42,14 @@ closest studies.
     Subramanyam et al.~\cite{subramanyam2022} & CWI-PCL    & \yes & \yes       & \partially & \no  & \no        & \no \\
     Cox et al.~\cite{Cox2023}               & \vpcc        & \yes & \no        & \no        & \no  & \no        & \no \\
     Nguyen et al.~\cite{nguyen2023}         & \vpcc        & \yes & \partially & \no        & \no  & \no        & \no \\
-    Zhou et al.~\cite{zhou2025tomm}         & \vpcc, \gpcc & \yes & \yes       & \no        & \no  & \no        & \no \\
+    Zhou et al.~\cite{zhou2025tomm}         & \vpcc, \glsentryshort{gpcc} & \yes & \yes       & \no        & \no  & \no        & \no \\
     Van Damme et al.~\cite{vandamme2024}    & \vpcc        & \yes & \no        & \no        & \yes & \no        & \no \\
     Dumic \& da Silva Cruz~\cite{dumic2023} & \vpcc        & \yes & \no        & \partially & \no  & \no        & \no \\
     Ravuri et al.~\cite{ravuri2023}         & \vpcc        & \no  & \no        & \yes       & \no  & \partially & \no \\
+    Cetus~\cite{hou2026cetus}               & --           & \no  & \no        & \yes       & \no  & \partially & \no \\
+    Sidhu \& Bentaleb~\cite{gpcc2026quic}   & \glsentryshort{gpcc}        & \no  & \no        & \partially & \no  & \yes       & \no \\
     Rudolph et al.~\cite{rudolph2025rabbit} & \vpcc        & \no  & \no        & \no        & \no  & \no        & \no \\
-    Udora et al.~\cite{qoeholographic,udora2025thesis} & uncompressed & \yes & \yes & \yes & \yes & \partially & \no \\
+    Udora et al.~\cite{qoeholographic,udora2026tmm} & uncompressed & \yes & \yes & \yes & \yes & \partially & \no \\
     \mosaic~\cite{mosaic2026}               & \vpcc        & \yes & \yes       & \yes       & \no  & \yes       & \no \\
     \vquest~\cite{vquest2026}               & frame-indep. & \yes & \yes       & \yes       & \no  & \yes       & \no \\
     \midrule
@@ -51,46 +61,68 @@ closest studies.
 \subsection{Volumetric Video Delivery and Transport}
 \label{sec:rw-systems}
 
-Surveys of immersive media delivery describe the end-to-end
-pipeline from capture to \gls{6dof} rendering and identify \gls{qoe}
-under network impairment as an open
-problem~\cite{Immersivevideo,Viola2023,shen2023toward,garcia22}; Liu et
-al.~\cite{pcstreaming21} and Enenche et al.~\cite{metaverseroad25} note
-that measuring the \gls{qoe} of point-cloud streaming ``is still in its
-infancy''. Streaming systems for \vpcc address bandwidth and
-adaptation. Rudolph et al.~\cite{rudolph2025rabbit} transcode \vpcc
-streams in real time by re-encoding only the video sub-streams; Shi et
-al.~\cite{qv424} add viewpoint-aware tiling to \vpcc using the
-encoder's intermediate outputs, with a \gls{qoe} model trained on
-VOLVQAD ratings. Codec-agnostic systems exploit inter-frame
-correlation~\cite{hermes}, neural super-resolution~\cite{yuzu},
-codec-independent progressive partitions~\cite{p2vs},
-multiple-description coding over \gls{webrtc}~\cite{mathias24} and
-multi-codec rate adaptation~\cite{codec}. These works evaluate with
-objective metrics or simulation and hold the encoder configuration, in
-particular the \gof length, fixed.
+Surveys of immersive media delivery describe the pipeline from capture
+to \gls{6dof} rendering and identify \gls{qoe} under network impairment
+as an open problem~\cite{Immersivevideo,Viola2023,shen2023toward,garcia22};
+Liu et al.~\cite{pcstreaming21} and Enenche et al.~\cite{metaverseroad25}
+note that measuring the \gls{qoe} of point-cloud streaming is still in
+its infancy, and Mozhganfar et al.~\cite{mozhganfar2026noms} classify
+the \gls{qoe} models that do exist for volumetric streaming by input
+factors and modelling strategy. The standards bodies have catalogued
+the influence factors without modelling them: ITU-T
+G.1035~\cite{itu_g1035} lists delay, bandwidth and loss among the
+network factors and frame rate among the media factors that shape
+\gls{vr} \gls{qoe}, and ITU-T P.1320~\cite{itu_p1320} extends the
+catalogue to \gls{xr} meetings; neither maps those factors to a score
+for volumetric content.
 
-On the transport side, Ravuri et al.~\cite{ravuri2023} integrate
-\gls{dash} with partially reliable \quic for \vpcc, deciding per object
-whether to deliver reliably, and report 46\% higher throughput and 33\%
-fewer playout interruptions than reliable \quic at 5\% loss on 5G
-traces, with a headless player. Haseeb et al.~\cite{haseeb2025} combine
-adaptive encoding with a mixed-reliability \quic protocol, Freeman et
+Streaming systems for \vpcc address bandwidth and adaptation. Rudolph
+et al.~\cite{rudolph2025rabbit} transcode \vpcc streams in real time by
+re-encoding only the video sub-streams; Shi et al.~\cite{qv424} add
+viewpoint-aware tiling to \vpcc using the encoder's intermediate
+outputs, with a \gls{qoe} model trained on VOLVQAD ratings.
+Codec-agnostic systems exploit inter-frame correlation~\cite{hermes},
+neural super-resolution~\cite{yuzu}, codec-independent progressive
+partitions~\cite{p2vs}, multiple-description coding over
+\gls{webrtc}~\cite{mathias24} and multi-codec rate
+adaptation~\cite{codec}. These works evaluate with objective metrics or
+simulation and hold the encoder configuration, in particular the \gof
+length, fixed.
+
+On the transport side, the dominant response to loss is to relax
+reliability. Ravuri et al.~\cite{ravuri2023} integrate \gls{dash} with
+partially reliable \quic for \vpcc, deciding per object whether to
+deliver reliably, and report 46\% higher throughput and 33\% fewer
+playout interruptions than reliable \quic at 5\% loss on 5G traces,
+with a headless player. Haseeb et al.~\cite{haseeb2025} combine
+adaptive encoding with a mixed-reliability \quic protocol; Freeman et
 al.~\cite{moq2025} obtain implicit server-side adaptation from
-Media-over-\quic delivery timeouts, Thomas and
-Xylomenos~\cite{thomas2025} stream point clouds with forward error
+Media-over-\quic delivery timeouts; and Hou et al.~\cite{hou2026cetus}
+couple an application-level frame-drop policy to partially reliable
+transmission for live volumetric video, reporting frame-rate and
+objective-quality gains. A second response handles loss below the
+transport: Qian et al.\ duplicate packets in eBPF between network nodes
+so that volumetric frames meet their deadlines despite path
+instability~\cite{qian2024ebpf}, and steer live volumetric flows across
+paths according to declared user intent~\cite{qian2024intent}. Thomas
+and Xylomenos~\cite{thomas2025} stream point clouds with forward error
 correction on a real 5G testbed without \quic, and Fiorina et
 al.~\cite{fiorina2025} estimate \gls{qoe} for multicast point-cloud
-streaming over 5G with an objective model. Each either modifies the
-fully reliable protocol that production stacks ship~\cite{rfc9000} or
-omits subjective evaluation; the perceptual cost of reliable \quic
-turning loss into delay has not been quantified. Before~\cite{mosaic2026},
-no study combined real \vpcc transmission over \quic, playback in a
-\gls{vr} headset, controlled impairment on a real link, 5G delivery and
-a standardised subjective study, and no study yet combines those with a
-model.
+streaming over 5G with an objective model. The one recent pipeline
+that keeps production \quic unmodified, Sidhu and Bentaleb's
+\gls{dash}-over-\quic delivery of \gpcc~\cite{gpcc2026quic}, finds that
+\quic implementation choices materially affect delivery but evaluates
+objectively, without a headset or a subjective study. Each of these
+works modifies the fully reliable protocol that production stacks
+ship~\cite{rfc9000}, handles loss outside it, or omits perceptual
+evaluation; that reliable \quic turns loss into delay, and delay into
+\gof stalls, is noted in several of them, but its perceptual cost has
+not been quantified. Before~\cite{mosaic2026}, no study combined real
+\vpcc transmission over \quic, playback in a \gls{vr} headset,
+controlled impairment on a real link, 5G delivery and a standardised
+subjective study, and no study yet combines those with a model.
 
-\subsection{Subjective Quality Assessment of Point-Cloud Video}
+\subsection{Subjective Quality Assessment}
 \label{sec:rw-subjective}
 
 Subjective studies of point-cloud video have concentrated on
@@ -120,48 +152,83 @@ before decoding and report \mos drops exceeding one scale unit at
 \SI{0.5}{\percent}, with geometry and occupancy losses far more
 damaging than attribute losses; Wu et al.~\cite{wu2021nossdav} study
 distortion and concealment under loss. In both, loss is applied to the
-bitstream rather than produced by a transport, and the content is
-shown as 2D video. Our earlier study~\cite{mosaic2026} rated \vpcc in
-head-mounted displays under real \quic impairment but paired each
-network tier with a different encoder configuration, so the two
-factors could not be separated. The only subjective study under delay
-and loss on reliable transport in head-mounted displays is otherwise
-that of Udora et al., discussed next.
+bitstream rather than produced by a transport, so the stimulus is
+corruption rather than delay, and the content is shown as 2D video.
+Our earlier study~\cite{mosaic2026} rated \vpcc in head-mounted
+displays under real \quic impairment but paired each network tier with
+a different encoder configuration, so the two factors could not be
+separated. The only other subjective study under delay and loss on
+reliable transport in head-mounted displays is that of Udora et al.,
+discussed in Section~\ref{sec:rw-models}.
 
-\subsection{\gls{qoe} Models for Volumetric Streaming}
+The attribute rated in this article is temporal smoothness, which has
+a perceptual literature of its own outside point clouds. Judder on
+head-mounted displays degrades the perceived quality of
+omnidirectional video and interacts with compression
+level~\cite{mahmoudpour2019judder}, and Klein et
+al.~\cite{klein2024vft} show that frame-timing variations of about
+\SI{12}{\milli\second} reduce perceived smoothness while variations of
+about \SI{4}{\milli\second} barely do. These studies establish
+smoothness as a ratable attribute distinct from fidelity; they do not
+connect it to transport behaviour.
+
+\subsection{\gls{qoe} Models}
 \label{sec:rw-models}
 
-Parametric \gls{qoe} models relate a network impairment to a quality
-score. The exponential form used in \crystal descends from the IQX
-hypothesis of Fiedler et al.~\cite{fiedler2010}, which derives
+Parametric \gls{qoe} models relate an impairment to a quality score.
+The exponential form used in \crystal descends from the IQX hypothesis
+of Fiedler et al.~\cite{fiedler2010}, which derives
 $\mathrm{QoE} = a\,e^{-bx} + c$ for a single impairment $x$; Reichl et
 al.~\cite{reichl2010} argue for a logarithmic law, and the two agree in
-the operating region of interest~\cite{alreshoodi2013}. For volumetric
-media, three kinds of model have been proposed. Streaming optimisers
-such as QV4~\cite{qv424} and Wang et al.~\cite{wang2022tmm} embed a
-weighted sum of quality, quality fluctuation and rebuffering as their
-objective; these are calibrated on 2D-video conventions and evaluated
-in simulation. Feature-based models map content or device features to
-quality without a network variable: Van Damme et
-al.~\cite{vandamme2022,vandamme2024} train a clustering-based
-psychometric model on no-reference image features for \vpcc video at
-video, \gof and frame granularity, and Zhang et al.~\cite{zhang2019towards}
-build a fuzzy inference system for the HoloLens.
+the operating region of interest~\cite{alreshoodi2013}. For buffered
+video the impairment that matters is stalling: Ho{\ss}feld et
+al.~\cite{hossfeld2011youtube} find an exponential dependence of \mos
+on the number and length of stalling events, later separated from
+initial delay~\cite{hossfeld2012initial}, and the survey by Seufert et
+al.~\cite{seufert2015survey} consolidates the stalling ratio as the
+established temporal \gls{qoe} variable for HTTP streaming. ITU-T
+P.1203~\cite{itu_p1203} standardises that view, folding initial delay,
+rebuffering and quality switches into a session score. In all of these
+the stalling term is \emph{measured} at the client; \crystal keeps the
+exponential kernel and a stalling-type variable but \emph{derives} it
+from transport mechanics, so that delay, loss and \gof length enter
+only through it.
+
+For volumetric media, three kinds of model have been proposed.
+Streaming optimisers such as QV4~\cite{qv424} and Wang et
+al.~\cite{wang2022tmm} embed a weighted sum of quality, quality
+fluctuation and rebuffering as their objective; these are calibrated
+on 2D-video conventions and evaluated in simulation, and Nguyen et
+al.~\cite{qoedynamicpc} adapt P.1203 to dynamic point clouds in
+\gls{ar} with the parameters of the 2D standard. Feature-based models
+map content or device features to quality without a network variable:
+Van Damme et al.~\cite{vandamme2022,vandamme2024} train a
+clustering-based psychometric model on no-reference image features for
+\vpcc video at video, \gof and frame granularity, and Zhang et
+al.~\cite{zhang2019towards} build a fuzzy inference system for the
+HoloLens.
 
 The third kind, and the closest to this work, is the network-aware
-regression of Udora et al.~\cite{qoeholographic,udora2025thesis}. From a
-double-stimulus study with 25 participants in head-mounted displays
-they fit
+regression of Udora et al.~\cite{qoeholographic,udora2026tmm} for live
+volumetric telepresence with uncompressed per-frame point clouds over
+reliable \glsentryshort{tcp}. From a double-stimulus study with 25
+participants in head-mounted displays they fit
 \begin{equation}
   \mathrm{QoE} = a\,e^{b D} + c\,\plr + d,
   \label{eq:udora}
 \end{equation}
 with the coefficients re-estimated for each of three point-cloud
-density levels. The transport is reliable \glsentryshort{tcp}, so the data
-carry the same loss-to-latency signature as ours; the form is
-additive in delay and loss; and held-out \gls{plcc} is 0.57--0.66
-across quality levels. \crystal keeps the exponential kernel but
-replaces the five fitted coefficients with one perceptual parameter
-and a measured ceiling, derives its explanatory variable from
-transport mechanics rather than fitting delay and loss directly, and
-treats separability as a prediction to be tested.
+density levels and held-out \gls{plcc} of 0.57--0.66; the journal
+version~\cite{udora2026tmm} embeds the model in a learning-based scheme
+that adapts resolution and frame rate to user intent and network
+state, and leaves \quic to future work. Two features make it the right
+baseline. It is the only published model that predicts a subjective
+score for volumetric content from network conditions under reliable
+transport, so its data carry the same loss-to-delay signature that
+\crystal sets out to explain; and its per-frame delivery is the
+limiting case of no \gof coupling, which gives the \gof term of
+\crystal an external reference point. \crystal differs in form (one
+perceptual parameter instead of per-level coefficients), in
+explanation (the delay--loss interaction is derived rather than
+fitted, with its additive form treated as a prediction to be tested)
+and in transport (production \quic rather than \glsentryshort{tcp}).
