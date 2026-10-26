@@ -1,8 +1,105 @@
-\section{Subjective Study Materials}
+\section{Online Appendix: Implementation Details}
+\label{app:implementation}
+
+This appendix complements Section~\ref{sec:system} with the upstream
+baseline and the change made for every component
+(Table~\ref{tab:adaptations}) and with diagrams of the components
+summarised there.
+
+\begin{table*}[!htb]
+  \caption{Adaptations made to build the pipeline, per component.}
+  \label{tab:adaptations}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.1cm}
+                                  >{\raggedright\arraybackslash}p{2.9cm}
+                                  >{\raggedright\arraybackslash}X
+                                  >{\raggedright\arraybackslash}p{3.2cm}@{}}
+    \toprule
+    \textbf{Component} & \textbf{Upstream baseline} & \textbf{Our adaptation} & \textbf{Reason} \\
+    \midrule
+    Encoder back end
+      & TMC2 v25.0 calling HM 16.20 for every video sub-stream
+      & HM-compatible shim that routes geometry and attribute videos to ffmpeg 6.1.1 + libx265 3.5 (LDP or RA settings chosen from the configuration name) and returns the reconstruction; occupancy stays on HM; atlas size fixed per sequence
+      & HM encoding time for dense sequences; decoder cannot follow atlas resizing \\
+    Segment input of the decoder
+      & 5G-MAG V3C decoder reading segments through its DASH client DLL
+      & Drop-in DLL with the same \texttt{dashc\_*} exports, backed by a bounded FIFO that the Unity scheduler fills
+      & Delivery over HTTP/3 under our own deadline policy, decoder left unchanged \\
+    Decoder teardown
+      & Video decoder threads joined without a wake-up
+      & Empty-packet sentinel before each join, mirroring the audio path (fork, reported upstream)
+      & Host froze when a starved session was stopped \\
+    Transport client
+      & \texttt{curl} (ngtcp2), one process and one connection per GOF
+      & Native lsquic HTTP/3 plugin: one connection per session, one stream per GOF, \texttt{STOP\_SENDING} cancellation, body-length check, transport statistics
+      & Handshake and slow start per GOF, no cancellation, no transport statistics \\
+    Playout control
+      & Upstream player streams from local files or DASH
+      & Per-GOF scheduler on a content clock with a decoder backpressure gate, cancellation with skip-ahead, V3C integrity guard and per-GOF logging
+      & Real-time playout semantics for the subjective study \\
+    VR presentation
+      & Unity XR plug-in with OpenXR
+      & Native plugin that copies the GL eye textures into shared D3D11 textures (\texttt{WGL\_NV\_DX\_interop2}) and submits them to OpenVR directly, with pose readback
+      & The decoder requires OpenGL and the SteamVR runtime rejects GL frames \\
+    Headset access
+      & Meta Quest~3 without a cellular modem
+      & Commercial USB-C 5G dongle adapted to the headset
+      & Stage~2 over the private 5G SA network \\
+    Origin and impairment
+      & Caddy with \texttt{netem} on the egress interface
+      & HTB $\rightarrow$ TBF $\rightarrow$ \texttt{netem} chain per port, GSO disabled, single TX queue, enlarged \texttt{netem} queue, qlog and pcap joined per GOF
+      & Transport confounds (Table~\ref{tab:confounds}) \\
+    Measurement
+      & Measurements only from the Unity Editor
+      & Headless harness that loads the same plugin and replays the scheduler, validated against Unity
+      & Unattended transport scans with server-side capture \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}
+
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{contrib/fig2_encoder_shim.pdf}
+  \caption{Encoder back end (Section~\ref{sec:sys-content}). \gls{tmc2} calls an external \gls{hm}-style encoder per video sub-stream; the shim answers the geometry and attribute calls with FFmpeg and libx265 and returns the reconstruction \gls{tmc2} expects, while the lossless occupancy map stays on \gls{hm}.}
+  \Description{TMC2 produces occupancy, geometry and attribute videos. Occupancy goes to HM. Geometry and attribute go to the shim, which parses HM arguments, detects the LDP or RA profile from the configuration name, encodes with ffmpeg 6.1.1 and libx265 3.5, and decodes the result back to YUV for TMC2. The multiplexer builds the V3C bitstream and the chunker splits it into per-GOF segments.}
+  \label{fig:contrib-encoder}
+\end{figure}
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{contrib/fig4_http3_plugin.pdf}
+  \caption{Native \gls{http3} client (Section~\ref{sec:sys-edge}). (a) Plugin built on lsquic. (b) One connection per session replaces one process and one handshake per \gof. (c) Measured with concurrent sessions at a prefetch depth of four \gofs (error bar: standard deviation across runs).}
+  \Description{Panel a: Unity calls a C\# binding, which calls a C ABI of ten functions; a worker thread holds the lsquic engine, a slot table, BoringSSL and a UDP socket toward Caddy. Panel b: timelines where curl repeats handshake and slow start for each GOF while the plugin performs one handshake and opens one stream per GOF. Panel c: bar charts, on-time GOFs 98.6 percent for the plugin and 47.6 percent for curl with eight sessions, and goodput 93.6 versus about 43 Mb/s with four sessions under a 100 Mb/s cap.}
+  \label{fig:contrib-plugin}
+\end{figure}
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{contrib/fig3_decoder_integration.pdf}
+  \caption{Decoder integration (Section~\ref{sec:sys-edge}). (a) The 5G-MAG decoder is fed through a replacement of its \gls{dash} client DLL that keeps the same exports and exposes a bounded FIFO to Unity. (b) Teardown fix: an empty packet wakes each parked video decoder thread before the join.}
+  \Description{Panel a: Unity components (scheduler, integrity guard, shim bridge) push GOFs into a FIFO inside the replacement DLL; the decoder pulls through the dashc functions into demux, four HEVC decoders, the synthesizer and OpenGL textures. Panel b: two timelines. Upstream, the host thread blocks forever in join while the decoder thread waits on an empty input. Patched, the host pushes an empty packet, the decoder thread wakes and exits, and join returns.}
+  \label{fig:contrib-decoder}
+\end{figure}
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{contrib/fig6_gldx_openxr_bypass.pdf}
+  \caption{Direct OpenVR submission (Section~\ref{sec:sys-edge}). Unity's XR plug-in and OpenXR are bypassed; eye textures are copied on the GPU into Direct3D~11 textures shared through \texttt{WGL\_NV\_DX\_interop2} and submitted to OpenVR.}
+  \Description{The decoder output is rendered into two eye targets. A C\# bridge triggers render-thread events in the native plugin, which blits each eye into a shared texture and submits it to OpenVR, then SteamVR, ALVR and the Quest 3. A dashed red path shows the standard OpenXR route, where GL frames are rejected. A dashed blue path returns head pose and projection matrices to Unity.}
+  \label{fig:contrib-gldx}
+\end{figure}
+\begin{figure}[!htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{contrib/fig7_origin_impairment.pdf}
+  \caption{Origin, impairment chain and server-side measurement (Section~\ref{sec:sys-stage1}). Numbered badges locate the transport confounds of Table~\ref{tab:confounds}.}
+  \Description{Caddy with four listeners feeds an HTB root that classifies by source port into four chains of TBF and netem, for clean, loss, delay and combined slices, then a virtio NIC with one transmit queue. qlog from Caddy and pcap after the qdiscs are joined into per-GOF metrics.}
+  \label{fig:contrib-origin}
+\end{figure}
+
+\section{Online Appendix: Subjective Study Materials}
 \label{app:study}
 \todo{Session script, rating interface screenshot, exact slice ordering.}
 
-\section{Supplementary Fit Diagnostics}
+\section{Online Appendix: Supplementary Fit Diagnostics}
 \label{app:fits}
 \todo{Residual plots, alternative model forms considered (additive,
 logistic) and why they were rejected.}

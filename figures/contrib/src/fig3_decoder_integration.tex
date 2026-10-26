@@ -1,0 +1,108 @@
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\newcommand{\bx}[2]{{\bfseries #1\par}\vspace{0.6pt}{\smallfig #2\par}}
+\begin{document}
+\figfont
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \tikzset{w/.style={text width=2.85cm, minimum height=0.9cm},
+           api/.style={font=\tinyfig\ttfamily, text=ink, align=left, inner sep=1pt},
+           apih/.style={font=\tinyfig\itshape, text=muted, align=left, inner sep=1pt},
+           panel/.style={font=\figfont\bfseries, anchor=north west, inner sep=0pt}}
+
+  \node[panel] at (0,9.45) {(a) Integration of the 5G-MAG V3C decoder};
+
+  % ------------------------------ Unity side --------------------------------
+  \node[ours, w] (sch) at (1.6,7.95) {\bx{Deadline scheduler}{classifies each GOF\\against its slot}};
+  \node[ours, w] (grd) at (1.6,6.65) {\bx{V3C integrity guard}{tile walk over the body;\\short or malformed GOFs\\are never pushed}};
+  \node[ours, w] (brg) at (1.6,5.35) {\bx{Shim bridge}{P/Invoke, one GOF per call}};
+  \draw[flow] (sch) -- (grd);
+  \draw[flow] (grd) -- (brg);
+  \begin{scope}[on background layer]
+    \node[zone, fit=(sch)(grd)(brg), inner sep=2.2mm, yshift=1mm] (zu) {};
+  \end{scope}
+  \node[zonetitle] at (zu.north west) {Unity (C\#)};
+
+  % ------------------------------ push-queue shim ----------------------------
+  \node[base, draw=oursDraw, fill=white, line width=0.6pt, text width=3.6cm,
+        minimum height=1.05cm] (fifo) at (6.35,6.45)
+     {{\bfseries bounded FIFO}\par{\smallfig thread safe, blocking pop,\\end-of-stream marker on shutdown}};
+  \node[apih, anchor=south west] (ph) at (4.35,8.12) {producer (Unity)};
+  \node[api, anchor=north west] (pin) at (ph.south west) {ShimInit\\ShimPushChunk\\ShimReset\\ShimShutdown};
+  \node[apih, anchor=south west] (ch) at (6.55,8.12) {consumer (decoder)};
+  \node[api, anchor=north west] (pout) at (ch.south west) {dashc\_create...\\dashc\_init...\\dashc\_startStreaming\\dashc\_getChunk};
+  \node[api, anchor=north, text=muted, align=center] (ptel) at ($(fifo.south)+(0,-0.1)$)
+     {ShimGetQueueDepth \textrm{(scheduler waits if} $\geq 2$\textrm{)}\\ShimGetConsumedCount};
+  \begin{scope}[on background layer]
+    \node[ours, fit=(ph)(ch)(pin)(pout)(fifo)(ptel), inner sep=2.0mm, yshift=1.1mm] (zs) {};
+  \end{scope}
+  \node[zonetitle, fill=oursFill] at (zs.north west) {\code{v3c\_dash\_streamer.dll}, replaced};
+  \node[dead, text width=3.4cm, anchor=north] (orig) at ($(zs.south)+(0,-0.35)$)
+     {{\bfseries original DASH client}\par{\smallfig MPD-driven segment fetching;\\same file and export names}};
+  \node[font=\tinyfig, text=oiVerm, anchor=north] at (orig.south) {removed from the build};
+
+  \draw[flow] (brg.east) -- ++(0.75,0) |- (fifo.west) node[pos=0.1, above, lab] {push};
+  \draw[ctrl, dash pattern=on 1.5pt off 1pt] (ptel.west) -| ($(sch.east)+(0.3,0)$) -- (sch.east);
+  
+
+  % ------------------------------ decoder plugin (patched) -------------------
+  \tikzset{dw/.style={up, text width=2.9cm, minimum height=0.72cm}}
+  \node[dw] (ld)  at (11.45,8.05) {\bx{Segment provider}{\code{loadDll}, pull loop}};
+  \node[dw] (dmx) at (11.45,7.0) {\bx{V3C demux}{PCC bitstream reader}};
+  \node[mod, text width=2.9cm, minimum height=0.72cm] (vd) at (11.45,5.9)
+     {\bx{4 HEVC decoders}{CUVID; teardown patched}};
+  \node[dw] (syn) at (11.45,4.8) {\bx{V-PCC synthesizer}{one atlas size per session}};
+  \node[dw] (gl)  at (11.45,3.75) {\bx{OpenGL textures}{drawn by Unity}};
+  \draw[flow] (ld) -- (dmx); \draw[flow] (dmx) -- (vd);
+  \draw[flow] (vd) -- (syn); \draw[flow] (syn) -- (gl);
+  \begin{scope}[on background layer]
+    \node[mod, fit=(ld)(dmx)(vd)(syn)(gl), inner sep=2.2mm, yshift=1mm, fill=modFill!45] (zd) {};
+  \end{scope}
+  \node[zonetitle, fill=modFill!45] at (zd.north west) {5G-MAG decoder plugin, fork};
+  \draw[flow] (fifo.east) -- ++(0.5,0) |- (ld.west) node[pos=0.78, above, lab] {pull};
+
+  % constraints handled outside the decoder
+  \node[note, text width=6.6cm, anchor=north west] at (0.05,3.95)
+    {\textbf{Constraints handled outside the decoder}\\
+     \textbullet\ fixed atlas size per session: set at encode time\\
+     \textbullet\ atlas change between sequences: decoder restarted\\\hspace*{6pt}between conditions\\
+     \textbullet\ no gaps inside a GOF: only complete GOFs are pushed};
+
+  % ======================== panel (b): teardown fix ===========================
+  \node[panel] at (0,2.2) {(b) Teardown fix in \code{stopVideoDecoders()}};
+  \tikzset{lane/.style={font=\smallfig, text=muted, anchor=east},
+           act/.style={base, font=\smallfig, fill=white, draw=ink, line width=0.45pt,
+              inner xsep=2pt, inner ysep=1.5pt},
+           wait/.style={draw=muted, line width=2.2pt, line cap=butt}}
+  % upstream
+  \node[font=\smallfig\bfseries, anchor=west] at (0.05,1.7) {upstream};
+  \node[lane] at (1.5,1.2) {host thread};
+  \node[lane] at (1.5,0.45) {decoder thread};
+  \draw[rule, line width=0.4pt] (1.6,1.2) -- (6.6,1.2);
+  \draw[rule, line width=0.4pt] (1.6,0.45) -- (6.6,0.45);
+  \node[act] (u1) at (2.25,1.2) {\code{finish()}};
+  \node[act] (u2) at (3.65,1.2) {\code{stop()}: join};
+  \draw[wait, draw=oiVerm] (4.4,1.2) -- (6.45,1.2);
+  \node[font=\tinyfig, text=oiVerm, anchor=south] at (5.42,1.3) {blocks forever, host freezes};
+  \draw[wait] (1.7,0.45) -- (6.45,0.45);
+  \node[font=\tinyfig, text=muted, anchor=north] at (4.08,0.33) {parked on an empty input, never sees the finish flag};
+
+  % patched
+  \node[font=\smallfig\bfseries, anchor=west] at (7.05,1.7) {patched: 4 lines, mirrors the audio path};
+  \node[lane] at (8.45,1.2) {host thread};
+  \node[lane] at (8.45,0.45) {decoder thread};
+  \draw[rule, line width=0.4pt] (8.55,1.2) -- (13.65,1.2);
+  \draw[rule, line width=0.4pt] (8.55,0.45) -- (13.65,0.45);
+  \node[act] (p1) at (9.05,1.2) {\code{finish()}};
+  \node[act, draw=oiBlue, fill=oursFill] (p2) at (10.6,1.2) {push empty packet};
+  \node[act] (p3) at (12.4,1.2) {\code{stop()}: join};
+  \draw[wait] (8.65,0.45) -- (10.6,0.45);
+  \draw[flow, draw=oiBlue] (p2.south) -- (10.6,0.5);
+  \node[act, fill=okFill, draw=oiGreen] (p4) at (11.45,0.45) {wakes, exits};
+  \draw[flow, draw=oiGreen] (p4.east) -| (p3.south);
+  \node[font=\tinyfig, text=oiGreen!70!black, anchor=south] at ($(p3.north)+(0,0.03)$) {returns};
+  \node[font=\tinyfig, text=muted, anchor=north west, align=left] at (8.55,0.2)
+    {stress test: 10 sessions (5 starved), 9 restarts,\\6 min idle: no hangs};
+
+  \provlegend{0.1,-0.75}
+\end{tikzpicture}
+\end{document}

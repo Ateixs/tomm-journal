@@ -74,35 +74,66 @@ block rather than a factor, because its purpose is to test the
 structural prediction at one operating point, not to map the
 \gof\,$\times$\,impairment plane.
 
-The impairment levels are chosen so that each factor alone produces a
-measurable but not saturating effect: the loss rate and the added
-one-way latency each sit inside the graded region established
-in~\cite{mosaic2026}, where mean opinion stayed above the ``Fair''
-threshold for most content, and are anchored to the 5G service
-performance targets of~\cite{3gpp22261}. Loss is applied as random
-(Bernoulli) loss by netem; latency as a fixed one-way delay without
-jitter, so that the slack consumed by a unit is deterministic apart
-from loss. Loss is accounted for at the IP layer of the origin, and
-the renderer's telemetry records, for every unit, the request time,
-completion time and deadline outcome, from which $\tlf$ is computed as
-in Eq.~\eqref{eq:tlf}.
+\paragraph{Calibration.}
+\label{sec:calibration}
+The impairment levels are chosen so that each condition produces a
+measurable but not saturating effect. They are located with the
+headless harness and the server capture of
+Section~\ref{sec:sys-measurement}, which scanned 29 impairment levels
+in 129 sessions (Figure~\ref{fig:transport-map}). Loss alone at the
+LAN round-trip time produces graded misses at 1--1.25\% and collapse
+from 1.75\%; delay alone produces graded misses at
+50--\SI{55}{\milli\second} one way and collapse from
+\SI{60}{\milli\second}. With \SI{9}{\milli\second} of added delay, a loss
+of 0.02\% is already graded and 0.05\% collapses: the same graded
+effect needs 60 times less loss once \SI{9}{\milli\second} of delay is
+present, the loss--delay interaction that the study measures. All three
+ladders break at the same point: a level survives while the median
+fetch takes three Unity frames (\SI{90}{\milli\second}) and collapses
+at four. Longdress, which needs the most packets per \gof, is the
+least tolerant sequence under loss. Loss is random (Bernoulli) and
+delay constant without jitter, so the slack a unit consumes is
+deterministic apart from loss, and the renderer's telemetry records
+for every unit the request time, completion time and deadline outcome
+from which $\tlf$ is computed (Eq.~\eqref{eq:tlf}). Harness values are
+candidates; each slice is confirmed with a Unity lap before it is
+rated. \todo{Harness candidates set D at \SI{9}{\milli\second} + 0.02\%,
+not at the B and C levels; reconcile with the ``same levels'' factorial
+above. The implementation notes also state that all rated conditions
+use \gls{ldp} \gof{}=4: confirm Slice~A (\gls{ra} 32) and block E
+(\gof{}=16).}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{contrib/fig8_transport_map.pdf}
+  \caption{Transport map of the campaign client measured with the
+  headless harness: mean fraction of \gofs not on time per level. Only
+  graded and severe levels are plotted per sequence; null levels stay
+  below 2\% for every sequence. Loss below 1\% at LAN \gls{rtt} was null.}
+  \Description{Three line charts. Loss only at LAN RTT: graded from 1
+  to 1.5 percent, collapse from 1.75 percent. Delay only: null at 40 ms,
+  graded at 50 and 55 ms, collapse from 60 ms. 9 ms delay plus loss:
+  null at 0.01 percent, graded at 0.02, severe at 0.03, collapse from
+  0.05 percent. Longdress is the least tolerant sequence on loss.}
+  \label{fig:transport-map}
+\end{figure}
 
 \begin{table}[t]
   \caption{Impairment slices. All slices share the same origin,
-  renderer and casting stage; B--D hold the encoder fixed. \todo{fill
-  $p$ and $\ell$}}
+  renderer and casting stage; B--D hold the encoder fixed. Values for
+  B--D are harness candidates \todo{pending Unity confirmation}.}
   \label{tab:impairments}
   \centering
   \small
-  \begin{tabular}{@{}llllll@{}}
+  \begin{tabular}{@{}lllllll@{}}
     \toprule
-    Slice & Loss $p$ & Added latency $\ell$ & Encoder & Role & Rated by \\
+    Slice & Port & Loss $p$ & Delay $\ell$ & Encoder & Role & Rated by \\
     \midrule
-    A & 0\%         & \SI{0}{\milli\second}        & \glsentryshort{ra}, \gof{}=32  & clean reference; $\qc$, $S_k$ & all \\
-    B & \todo{$p$}  & \SI{0}{\milli\second}        & \glsentryshort{ldp}, \gof{}=4  & loss only & all \\
-    C & 0\%         & \todo{$\ell$}                & \glsentryshort{ldp}, \gof{}=4  & latency only & all \\
-    D & \todo{$p$}  & \todo{$\ell$}                & \glsentryshort{ldp}, \gof{}=4  & combined & all \\
-    E & \todo{$p$}  & \todo{$\ell$}                & \glsentryshort{ldp}, \gof{}=16 & delivery-unit contrast & \todo{subset / all} \\
+    A & 5001 & 0\%         & \SI{0}{\milli\second}        & \glsentryshort{ra}, \gof{}=32  & reference; $\qc$, $S_k$ & all \\
+    B & 5002 & 1.25\%      & \SI{0}{\milli\second}        & \glsentryshort{ldp}, \gof{}=4  & loss only & all \\
+    C & 443  & 0\%         & \SI{55}{\milli\second}       & \glsentryshort{ldp}, \gof{}=4  & latency only & all \\
+    D & 5003 & 0.02\%      & \SI{9}{\milli\second}        & \glsentryshort{ldp}, \gof{}=4  & combined & all \\
+    E & 5003 & \todo{$p$}  & \todo{$\ell$}                & \glsentryshort{ldp}, \gof{}=16 & \gof contrast & \todo{subset} \\
     \bottomrule
   \end{tabular}
 \end{table}

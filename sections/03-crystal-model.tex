@@ -69,9 +69,10 @@ The stream is a sequence of delivery units $k = 1, 2, \ldots$; for
 \vpcc the delivery unit is the \gof, with $G$ frames at frame rate $f$
 and nominal duration $T_u = G/f$. Unit $k$ has $n_k = \lceil B_k / P
 \rceil$ packets, where $B_k$ is its encoded size and $P$ the payload per
-\quic packet (\SI{1376}{B} on the testbed, Section~\ref{sec:system}).
-The client fetches units over a persistent \gls{http3} connection with
-a paced controller that keeps up to $W$ units in flight and starts
+\quic packet (up to \SI{1419}{B} on the testbed,
+Section~\ref{sec:sys-stage1}). The client fetches units over a
+persistent \gls{http3} connection with a scheduler that keeps $W$ units
+in flight ($W=1$ in this study, Section~\ref{sec:sys-edge}) and starts
 unit $k$ at $r_k$; the unit must be decoded by its presentation
 deadline $d_k$. Under no impairment, delivery takes $D^0_k = \rho +
 B_k/C$, one round trip $\rho$ for the request plus transfer at goodput
@@ -81,7 +82,7 @@ $C$, and the \emph{slack}
   \label{eq:slack}
 \end{equation}
 is the budget the unit has for absorbing a disturbance. $S_k$ is set by
-the prefetch margin and the pacing of the controller, grows with $T_u$,
+the depth $W$ and the pacing of the scheduler, grows with $T_u$,
 and is read directly from Slice~A telemetry rather than modelled.
 
 \paragraph{How delay and loss consume slack.}
@@ -111,8 +112,9 @@ unit $k$ under impairment is
 and the unit misses its deadline when $D_k > S_k$.
 
 \paragraph{From misses to temporal loss.}
-The renderer's policy on a miss is the one of~\cite{mosaic2026}: the
-late unit is dropped and the last good unit is held, so a miss costs
+The renderer's policy on a miss (Section~\ref{sec:sys-edge}) runs on a
+content clock that never pauses: the late unit is dropped and the last
+good unit is held, so a miss costs
 the viewer the $G$ frames of that unit, shown as a freeze of length
 $T_u$ followed by a skip. A unit that arrives late but within the
 hold window contributes a freeze of length $\tau_k = \max(0, D_k -
@@ -122,7 +124,8 @@ S_k)$. Over a session of $N$ units the temporal loss fraction is
   \;=\; \crystallayerone,
   \label{eq:tlf}
 \end{equation}
-where $H$ is the hold window after which the unit is dropped, and the
+where $H$ is the hold window after which the unit is dropped (one unit
+duration, \SI{133}{\milli\second} at \gof{}=4, in the scheduler), and the
 second form is the operational definition measured from telemetry: one
 minus the ratio of frames rendered on schedule to frames due. Taking
 expectations over $L_k$ gives $\tlf$ as a function of

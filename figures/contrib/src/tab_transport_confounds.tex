@@ -1,0 +1,42 @@
+% Table: transport confounds found while calibrating the impairment chain.
+% Numbers from the server qlog + pcap analyses (Sep-Oct 2026), see project notes.
+\begin{table*}[t]
+  \caption{Transport confounds removed before calibration. Numbers are per 30\,s session unless stated.}
+  \label{tab:confounds}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabularx}{\textwidth}{@{}c>{\raggedright\arraybackslash}X
+                                   >{\raggedright\arraybackslash}p{3.6cm}
+                                   >{\raggedright\arraybackslash}p{3.3cm}
+                                   >{\raggedright\arraybackslash}p{2.6cm}@{}}
+    \toprule
+    & \textbf{Cause} & \textbf{Before} & \textbf{After} & \textbf{Fix} \\
+    \midrule
+    1 & Segmentation offload bursts reorder packets; the server declares them lost
+      & 367 loss events, 364 spurious; cwnd capped near 126\,kB
+      & 0 spurious losses; cwnd up to 1.3\,MB
+      & \texttt{QUIC\_GO\_}\allowbreak\texttt{DISABLE\_GSO} \\
+    2 & Twelve virtio TX queues spread one QUIC flow and reorder it
+      & $\approx$2.5\,\% of packets declared lost, 97--99\,\% of them spurious; cwnd $\approx$30\,kB
+      & 0 spurious losses on all 12 connections; cwnd 130--160\,kB
+      & one TX queue (\texttt{ethtool -L}) \\
+    3 & \texttt{netem} without a rate-limited parent drops fewer packets than configured
+      & $\approx$7$\times$ fewer drops than configured
+      & 1\,\% configured, 1.005\,\% measured
+      & TBF parent per port \\
+    4 & TBF bucket smaller than one 1450\,B packet on the delay chains
+      & 34\,\% of packets hit the rate limiter
+      & 0.8\,\%
+      & burst 2.5\,kB \\
+    5 & Default \texttt{netem} queue overflows at 20\,ms one-way delay
+      & 73 drops on a delay-only chain
+      & 0 drops
+      & queue limit raised \\
+    6 & VPN tunnel over TCP between client and server
+      & RTT under load p90 20\,ms, p99 33\,ms
+      & p90 1--2\,ms
+      & isolated VLAN path \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}

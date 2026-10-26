@@ -38,6 +38,7 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit,backgrounds}
 \usepackage{multirow}
+\usepackage{tabularx}
 \usepackage{makecell}
 \usepackage{pifont}
 % Positioning-table symbols (MOSAIC/VQUEST style)
@@ -215,7 +216,11 @@ acknowledgements as applicable.}
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 
+\clearpage
 \appendix
+\renewcommand{\topfraction}{0.95}\renewcommand{\bottomfraction}{0.95}
+\renewcommand{\textfraction}{0.05}\renewcommand{\floatpagefraction}{0.8}
+\setcounter{totalnumber}{4}\setcounter{topnumber}{3}
 \input{sections/A-appendix}
 
 \end{document}

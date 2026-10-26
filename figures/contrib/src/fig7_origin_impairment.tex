@@ -1,0 +1,72 @@
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\newcommand{\bx}[2]{{\bfseries #1\par}\vspace{0.6pt}{\smallfig #2\par}}
+\begin{document}
+\figfont
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \tikzset{q/.style={base, fill=white, draw=oursDraw, line width=0.6pt, font=\smallfig,
+              text width=1.6cm, minimum height=0.62cm},
+           cls/.style={font=\smallfig, anchor=east, align=right},
+           badge/.style={stepc, fill=oiVerm}}
+
+  % ---------------------------- Caddy ------------------------------------------
+  \node[up, text width=2.45cm, minimum height=3.55cm] (cad) at (1.4,3.05)
+    {\bx{Caddy 2.11.1}{quic-go 0.59, HTTP/3,\\one listener per slice\\[3pt]
+      \code{:5001} A\\\code{:5002} B\\\code{:443}\phantom{0} C\\\code{:5003} D\\[3pt]
+      GSO disabled;\\qlog only during\\calibration laps}};
+  \node[badge] at (cad.north east) {1};
+
+  % ---------------------------- qdisc tree --------------------------------------
+  \node[q, text width=1.15cm, minimum height=3.55cm] (htb) at (3.85,3.05) {\textbf{HTB}\\root\\[2pt]classify\\by source\\port};
+  \foreach \n/\y/\l/\ne in {A/4.55/:5001/{no netem\\(clean)},
+                           B/3.55/:5002/{netem\\loss $p_B$},
+                           C/2.55/:443/{netem\\delay $d_C$},
+                           D/1.55/:5003/{netem\\$d_D$ + $p_D$}}{
+    \node[font=\tinyfig\bfseries, anchor=south west, inner sep=1pt] (L\n) at (4.55,\y+0.02) {\n};
+    \node[font=\tinyfig\ttfamily, text=muted, anchor=south west, inner sep=1pt] at (4.75,\y+0.02) {\l};
+    \node[q] (T\n) at (6.6,\y) {TBF\\burst 2.5\,kB};
+    \node[q] (N\n) at (8.55,\y) {\ne};
+    \draw[flow] (htb.east |- T\n.west) -- (T\n.west);
+    \draw[flow] (T\n) -- (N\n);
+  }
+  \node[q, draw=upDraw, fill=white, dash pattern=on 1.5pt off 1pt, text=muted] at (NA) {no netem\\(clean)};
+  \begin{scope}[on background layer]
+    \node[ours, fit=(htb)(TA)(NA)(TD)(ND)(LA), inner sep=2.2mm, yshift=1.1mm, fill=oursFill] (zq) {};
+  \end{scope}
+  \node[zonetitle, fill=oursFill] at (zq.north west) {egress \code{tc} chain on \code{eth0} (this work)};
+  \node[badge] at ($(TA.north west)+(-0.05,0.12)$) {3};
+  \node[badge] at ($(TA.north east)+(0.05,0.12)$) {4};
+  \node[badge] at ($(NC.north east)+(0.05,0.12)$) {5};
+  \draw[flow] (cad.east |- htb.west) -- (htb.west);
+
+  % ---------------------------- NIC + link -------------------------------------
+  \node[up, text width=1.85cm, minimum height=3.55cm] (nic) at (11.2,3.05)
+    {\bx{virtio NIC}{\code{eth0}, MTU 1450\\[3pt]forced to one\\TX queue}};
+  \node[badge] at (nic.north east) {2};
+  \foreach \n in {A,B,C,D}{ \draw[flow] (N\n.east) -- (nic.west |- N\n.east); }
+  \draw[flow] (nic.east) -- ++(0.65,0) node[above, lab, align=center, anchor=south] {to edge\\renderer};
+
+  % ---------------------------- measurement plane -------------------------------
+  \node[ours, text width=2.45cm, minimum height=0.85cm] (ql) at (1.4,0.05)
+    {\bx{qlog}{one file per connection}};
+  \node[ours, text width=1.85cm, minimum height=0.85cm] (pc) at (11.2,0.05)
+    {\bx{pcap}{after the qdiscs}};
+  \node[ours, text width=5.2cm, minimum height=0.85cm] (jn) at (6.6,0.05)
+    {\bx{Join by packet order and size}{per-GOF packets, send span, retransmitted bytes}};
+  \draw[dflow, draw=oiBlue] (cad.south) -- (ql.north);
+  \draw[dflow, draw=oiBlue] (nic.south) -- (pc.north);
+  \draw[flow] (ql) -- (jn);
+  \draw[flow] (pc) -- (jn);
+  \node[font=\tinyfig, text=muted, anchor=north] at (jn.south) {cross-checked against the client's per-GOF CSV};
+
+  % ---------------------------- confound key ------------------------------------
+  \node[note, anchor=north west, text width=13.4cm] at (0.05,-0.75)
+    {\textcolor{oiVerm}{\textbf{1}}~GSO bursts reordered packets and caused spurious losses.
+     \textcolor{oiVerm}{\textbf{2}}~Twelve TX queues spread one flow and reordered it.
+     \textcolor{oiVerm}{\textbf{3}}~netem without a TBF parent under-drops.
+     \textcolor{oiVerm}{\textbf{4}}~A bucket smaller than one packet caused overlimits on the delay chains.
+     \textcolor{oiVerm}{\textbf{5}}~The default netem queue (1000 packets) overflowed at 20\,ms. Impairment acts on the server-to-client direction only. Measured effects: see the confounds table.};
+
+  \provlegend{0.1,-2.2}
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,64 @@
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\newcommand{\bx}[2]{{\bfseries #1\par}\vspace{0.6pt}{\smallfig #2\par}}
+\begin{document}
+\figfont
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \tikzset{w/.style={text width=2.35cm, minimum height=0.95cm},
+           pw/.style={base, fill=white, draw=oursDraw, line width=0.6pt,
+              text width=1.98cm, minimum height=1.3cm, font=\smallfig},
+           rw/.style={up, text width=2.2cm, minimum height=0.72cm}}
+
+  % ---------------------------- Unity (OpenGLCore) ----------------------------
+  \node[up, w] (dec) at (1.45,4.05) {\bx{Decoder output}{point cloud drawn in GL}};
+  \node[ours, w] (rt) at (1.45,2.75) {\bx{Stereo eye targets}{2 × 1832×1920, sRGB,\\one camera per eye}};
+  \node[ours, w, minimum height=1.25cm] (br) at (1.45,1.3) {\bx{C\# bridge}{render-thread events\\INIT, BLIT L/R,\\SUBMIT}};
+  \draw[flow] (dec) -- (rt);
+  \draw[flow] (rt) -- (br);
+  \begin{scope}[on background layer]
+    \node[zone, fit=(dec)(rt)(br), inner sep=2.2mm, yshift=1mm] (zu) {};
+  \end{scope}
+  \node[zonetitle] at (zu.north west) {Unity in OpenGLCore};
+
+  % ---------------------------- GLDXInterop.dll --------------------------------
+  \node[pw] (bl) at (4.45,2.0) {\textbf{GL blit}\\\code{glBlitFramebuffer},\\Y axis flipped};
+  \node[pw] (ix) at (6.9,2.0) {\textbf{shared texture}\\GL name over an\\\code{ID3D11Texture2D}};
+  \node[pw] (sb) at (9.35,2.0) {\textbf{submit}\\\code{WaitGetPoses},\\\code{Submit(L)}, \code{Submit(R)}};
+  \draw[flow] (bl) -- (ix);
+  \draw[flow] (ix) -- (sb);
+  \node[font=\tinyfig, text=oiBlue, anchor=north, fill=oursFill, inner sep=1pt] at ($(ix.south)+(0,-0.06)$) {\code{WGL\_NV\_DX\_interop2}, zero copy};
+  \begin{scope}[on background layer]
+    \node[ours, fit=(bl)(ix)(sb), inner sep=2.6mm, yshift=1.2mm, fill=oursFill] (zp) {};
+  \end{scope}
+  \node[zonetitle, fill=oursFill] at (zp.north west) {\code{GLDXInterop.dll} (native, C++)};
+  \draw[flow] (br.east) -- ++(0.3,0) |- (bl.west);
+
+  % ---------------------------- OpenVR delivery --------------------------------
+  \node[rw] (ovr) at (12.45,3.45) {\bx{\code{openvr\_api.dll}}{Valve runtime client}};
+  \node[rw] (svr) at (12.45,2.45) {\bx{SteamVR}{compositor (D3D11)}};
+  \node[rw] (alvr) at (12.45,1.45) {\bx{ALVR 20.14.1}{encode, stream}};
+  \node[rw] (q3) at (12.45,0.45) {\bx{Meta Quest 3}{display, head tracking}};
+  \draw[flow] (sb.east) -- ++(0.25,0) |- (ovr.west);
+  \draw[flow] (ovr) -- (svr); \draw[flow] (svr) -- (alvr); \draw[flow] (alvr) -- (q3);
+
+  % ---------------------------- bypassed OpenXR path ---------------------------
+  \node[dead, text width=2.9cm, minimum height=0.8cm] (xr) at (6.0,4.25)
+    {{\bfseries Unity XR plug-in + OpenXR}\par{\smallfig no loader enabled}};
+  \node[dead, text width=2.7cm, minimum height=0.8cm] (drop) at (9.6,4.25)
+    {{\bfseries GL frames rejected}\par{\smallfig runtime expects D3D11}};
+  \draw[failflow] (dec.east) -- (xr.west |- dec.east);
+  \draw[failflow] (xr) -- (drop);
+  \node[font=\tinyfig, text=oiVerm, anchor=south] at ($(xr.north)!0.5!(drop.north)+(0,0.04)$) {standard path, bypassed};
+
+  % ---------------------------- pose feedback ----------------------------------
+  \draw[dflow, draw=oiBlue] (sb.south) -- (sb.south |- 0,0.3) -- (1.45,0.3) -- (br.south);
+  \node[font=\tinyfig, text=oiBlue, anchor=south, fill=white, inner sep=1pt] at (5.4,0.3)
+    {head pose, eye-to-head and projection matrices, converted to Unity's left-handed frame};
+
+  % ---------------------------- notes -----------------------------------------
+  \node[note, anchor=north west, text width=13.2cm] at (0.05,-0.05)
+    {OpenVR is initialized as a scene application so that the compositor grants focus after \code{WaitGetPoses}. CUVID decoding and \code{WGL\_NV\_DX\_interop2} make the edge renderer NVIDIA-only.};
+
+  \provlegend{0.1,-0.95}
+\end{tikzpicture}
+\end{document}

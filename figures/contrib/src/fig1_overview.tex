@@ -1,0 +1,100 @@
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\newcommand{\bx}[2]{{\bfseries #1\par}\vspace{0.6pt}{\smallfig #2\par}}
+\begin{document}
+\figfont
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \def\xa{1.27}\def\xb{3.99}\def\xc{6.71}\def\xd{9.43}\def\xe{12.15}
+  \tikzset{w/.style={text width=2.27cm, minimum height=1.12cm},
+    probe/.style={font=\tinyfig, text=oiBlue, fill=white, draw=oiBlue,
+      line width=0.45pt, rounded corners=4pt, inner xsep=2.2pt, inner ysep=1.2pt}}
+
+  % ===================== lane 1: content preparation (L -> R) ==============
+  \node[up, w] (pc) at (\xa,8.35) {\bx{8iVFB sequences}{Soldier, Longdress\\(vox10), ThaiDancer\\(vox12), 300 frames}};
+  \node[up, w] (tmc) at (\xb,8.35) {\bx{TMC2 v25.0}{V-PCC encoder,\\HMAPP codec path,\\fixed atlas size}};
+  \node[ours, w, minimum height=0.72cm] (shim) at (\xc,8.65) {\bx{HMAPP shim}{ffmpeg + libx265}};
+  \node[up, w, minimum height=0.46cm, inner ysep=1.4pt] (hm) at (\xc,7.87) {{\smallfig HM 16.20 (occupancy)}};
+  \node[up, w] (chunk) at (\xd,8.35) {\bx{VpccChunkCreator}{5G-MAG content tool,\\1 chunk = 1 GOF}};
+  \node[up, w] (seg) at (\xe,8.35) {\bx{GOF segments}{GOF 4: 75 × 133\,ms\\(GOF 16 and 32\\also encoded)}};
+
+  \draw[flow] (pc) -- (tmc);
+  \draw[flow] (tmc.east) -- ++(0.17,0) |- (shim.west);
+  \draw[flow] (tmc.east) -- ++(0.17,0) |- (hm.west);
+  \draw[flow] (shim.east) -- ++(0.17,0) |- (chunk.west);
+  \draw[flow] (hm.east) -- ++(0.17,0) |- (chunk.west);
+  \draw[flow] (chunk) -- (seg);
+
+  \begin{scope}[on background layer]
+    \node[zone, fit=(pc)(tmc)(shim)(hm)(chunk)(seg), inner xsep=2.2mm,
+      inner ysep=2.4mm] (z1) {};
+  \end{scope}
+  \node[zonetitle] at (z1.north west) {Content preparation (offline, WSL Ubuntu 24.04)};
+
+  % ===================== lane 2: origin + stage-1 (R -> L) ==================
+  \node[up, w] (caddy) at (\xe,6.05) {\bx{Caddy 2.11.1}{quic-go HTTP/3 origin,\\one port per slice}};
+  \node[ours, text width=4.9cm, minimum height=1.12cm] (tc) at ($(\xc,6.05)!0.5!(\xd,6.05)$)
+    {\bx{Per-port impairment chain (\code{tc})}{HTB $\rightarrow$ TBF (burst $\geq$ 1 MTU) $\rightarrow$ netem\\A 5001 clean \textbar{} B 5002 loss\\C 443 delay \textbar{} D 5003 delay + loss}};
+  \node[ours, w] (hyg) at (\xb,6.05) {\bx{Transport hygiene}{GSO off, 1 TX queue,\\netem limit raised}};
+  \node[up, w] (link) at (\xa,6.05) {\bx{Stage-1 link}{origin to edge\\renderer, VLAN}};
+  \node[probe, anchor=north] (pr1) at ($(caddy.south)+(0,-0.07)$) {qlog + pcap, joined per GOF};
+
+  \draw[flow] (seg) -- (caddy);
+  \draw[flow] (caddy) -- (tc);
+  \draw[flow] (tc) -- (hyg);
+  \draw[flow] (hyg) -- (link);
+
+  \begin{scope}[on background layer]
+    \node[zone, fit=(caddy)(tc)(hyg)(link)(pr1), inner xsep=2.2mm,
+      inner ysep=2.4mm] (z2) {};
+  \end{scope}
+  \node[zonetitle] at (z2.north west) {Volumetric origin and Stage-1 impairment (Linux VM)};
+
+  % ===================== lane 3: edge renderer (L -> R) =====================
+  \tikzset{w3/.style={text width=2.27cm, minimum height=1.42cm}}
+  \node[ours, w3] (plg) at (\xa,3.4) {\bx{HTTP/3 plugin}{lsquic + BoringSSL,\\1 connection/session,\\1 stream/GOF}};
+  \node[ours, w3] (sch) at (\xb,3.4) {\bx{Deadline scheduler}{per-GOF content clock,\\cancel + skip-ahead,\\V3C integrity check}};
+  \node[ours, w3] (pq)  at (\xc,3.4) {\bx{Push-queue shim}{replaces the DASH\\client behind the\\\code{dashc\_*} ABI}};
+  \node[mod, w3] (dec)  at (\xd,3.4) {\bx{V3C decoder}{4 HEVC decoders\\(CUVID), synthesizer,\\teardown fix}};
+  \node[ours, w3] (gldx) at (\xe,3.4) {\bx{GLDXInterop}{GL to D3D11 zero copy,\\direct OpenVR submit,\\OpenXR bypassed}};
+  \node[probe, anchor=north] (pr2) at ($(plg.south)+(0,-0.07)$) {headless harness};
+  \node[probe, anchor=north] (pr3) at ($(sch.south)+(0,-0.07)$) {per-GOF CSV, MOS};
+  \node[probe, anchor=north] (pr4) at ($(dec.south)+(0,-0.07)$) {fork, reported upstream};
+
+  \draw[flow] (link.south) -- (plg.north);
+  \draw[flow] (plg) -- (sch);
+  \draw[flow] (sch) -- (pq);
+  \draw[flow] (pq) -- (dec);
+  \draw[flow] (dec) -- (gldx);
+
+  \begin{scope}[on background layer]
+    \node[zone, fit=(plg)(sch)(pq)(dec)(gldx)(pr2), inner xsep=2.2mm,
+      inner ysep=2.4mm] (z3) {};
+  \end{scope}
+  \node[zonetitle] at ($(z3.north west)+(1.45,0)$) {Edge renderer (Windows 11, Unity 6 in OpenGLCore, NVIDIA GPU)};
+
+  % ===================== lane 4: stage 2 (R -> L) ===========================
+  \tikzset{w4/.style={text width=2.27cm, minimum height=0.95cm}}
+  \node[up, w4] (svr)  at (\xe,0.85) {\bx{SteamVR}{OpenVR compositor}};
+  \node[up, w4] (alvr) at (\xd,0.85) {\bx{ALVR streamer}{stereo frame encoder}};
+  \node[up, w4] (fiveg) at (\xc,0.85) {\bx{Private 5G SA}{RU, BBU, core at edge}};
+  \node[ours, w4] (dongle) at (\xb,0.85) {\bx{USB-C 5G dongle}{adapted to the HMD}};
+  \node[up, w4] (q3) at (\xa,0.85) {\bx{Meta Quest 3}{ALVR client, 6DoF}};
+
+  \draw[flow] (gldx) -- (svr);
+  \draw[flow] (svr) -- (alvr);
+  \draw[flow] (alvr) -- (fiveg);
+  \draw[flow] (fiveg) -- (dongle);
+  \draw[flow] (dongle) -- (q3);
+
+  \begin{scope}[on background layer]
+    \node[zone, fit=(svr)(alvr)(fiveg)(dongle)(q3), inner xsep=2.2mm,
+      inner ysep=2.4mm] (z4) {};
+  \end{scope}
+  \node[zonetitle] at (z4.north west) {Stage 2: edge to headset (held constant across conditions)};
+
+  % ===================== legend ==============================================
+  \provlegend{0.2,-0.45}
+  \node[anchor=west, font=\smallfig] at (10.75,-0.45)
+    {\tikz[baseline=-0.6ex]\node[probe]{probe};\ measurement};
+\end{tikzpicture}
+\end{document}

@@ -64,11 +64,14 @@ configuration. The contributions are:
 \begin{itemize}[leftmargin=*,nosep]
   \item[--] \textbf{An end-to-end pipeline for \vpcc over reliable \quic
         to a \gls{vr} headset}, documented in full: an \gls{hm}-compatible
-        x265 shim for tractable \gls{tmc2} encoding, a deadline-paced
-        \gls{http3} fetcher replacing the \gls{dash} client of the
-        5G-MAG decoder, a zero-copy OpenGL-to-DirectX bridge that
-        bypasses Unity's OpenXR path, and a 5G-capable Meta Quest~3
-        (Section~\ref{sec:system}).
+        x265 shim for tractable \gls{tmc2} encoding; a native lsquic
+        \gls{http3} client with per-\gof cancellation and a deadline
+        scheduler on a content clock, feeding the 5G-MAG decoder through a
+        drop-in replacement of its \gls{dash} client; a fix for a decoder
+        teardown deadlock; a zero-copy OpenGL-to-Direct3D bridge that
+        bypasses Unity's OpenXR path; a 5G-capable Meta Quest~3; and an
+        impairment chain cleared of six transport confounds that each
+        mimicked a property of \vpcc over \quic (Section~\ref{sec:system}).
   \item[--] \textbf{An encoding campaign} that characterises the
         rate--distortion behaviour of random-access and low-delay
         configurations for three \gls{mpeg} test sequences and selects

@@ -1,0 +1,54 @@
+% Requires (acmart already loads booktabs): \usepackage{tabularx}
+% Table: what we changed in each upstream component, and why.
+\begin{table*}[t]
+  \caption{Adaptations made to build the pipeline, per component.}
+  \label{tab:adaptations}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.1cm}
+                                  >{\raggedright\arraybackslash}p{2.9cm}
+                                  >{\raggedright\arraybackslash}X
+                                  >{\raggedright\arraybackslash}p{3.2cm}@{}}
+    \toprule
+    \textbf{Component} & \textbf{Upstream baseline} & \textbf{Our adaptation} & \textbf{Reason} \\
+    \midrule
+    Encoder back end
+      & TMC2 v25.0 calling HM 16.20 for every video sub-stream
+      & HM-compatible shim that routes geometry and attribute videos to ffmpeg 6.1.1 + libx265 3.5 (LDP or RA settings chosen from the configuration name) and returns the reconstruction; occupancy stays on HM; atlas size fixed per sequence
+      & HM encoding time for dense sequences; decoder cannot follow atlas resizing \\
+    Segment input of the decoder
+      & 5G-MAG V3C decoder reading segments through its DASH client DLL
+      & Drop-in DLL with the same \texttt{dashc\_*} exports, backed by a bounded FIFO that the Unity scheduler fills
+      & Delivery over HTTP/3 under our own deadline policy, decoder left unchanged \\
+    Decoder teardown
+      & Video decoder threads joined without a wake-up
+      & Empty-packet sentinel before each join, mirroring the audio path (fork, reported upstream)
+      & Host froze when a starved session was stopped \\
+    Transport client
+      & \texttt{curl} (ngtcp2), one process and one connection per GOF
+      & Native lsquic HTTP/3 plugin: one connection per session, one stream per GOF, \texttt{STOP\_SENDING} cancellation, body-length check, transport statistics
+      & Handshake and slow start per GOF, no cancellation, no transport statistics \\
+    Playout control
+      & Upstream player streams from local files or DASH
+      & Per-GOF scheduler on a content clock with a decoder backpressure gate, cancellation with skip-ahead, V3C integrity guard and per-GOF logging
+      & Real-time playout semantics for the subjective study \\
+    VR presentation
+      & Unity XR plug-in with OpenXR
+      & Native plugin that copies the GL eye textures into shared D3D11 textures (\texttt{WGL\_NV\_DX\_interop2}) and submits them to OpenVR directly, with pose readback
+      & The decoder requires OpenGL and the SteamVR runtime rejects GL frames \\
+    Headset access
+      & Meta Quest~3 without a cellular modem
+      & Commercial USB-C 5G dongle adapted to the headset
+      & Stage~2 over the private 5G SA network \\
+    Origin and impairment
+      & Caddy with \texttt{netem} on the egress interface
+      & HTB $\rightarrow$ TBF $\rightarrow$ \texttt{netem} chain per port, GSO disabled, single TX queue, enlarged \texttt{netem} queue, qlog and pcap joined per GOF
+      & Transport confounds (Table~\ref{tab:confounds}) \\
+    Measurement
+      & Measurements only from the Unity Editor
+      & Headless harness that loads the same plugin and replays the scheduler, validated against Unity
+      & Unattended transport scans with server-side capture \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}

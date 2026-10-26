@@ -1,0 +1,88 @@
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\begin{document}
+\figfont
+% Data: claude/transport-scenario-summary.md (harness scan, 18/10/2026,
+% campaign-v2 loop, --frame-ms 30). Mean not-on-time fraction per rung,
+% SOL / THA / LON. Only graded and severe rungs carry per-sequence values;
+% null and collapse rungs are marked, not plotted.
+\pgfplotsset{
+  mapaxis/.style={
+    width=3.6cm, height=3.25cm, scale only axis,
+    ymin=0, ymax=100, ytick={0,20,40,60,80,100},
+    axis lines*=left, axis line style={draw=rule, line width=0.45pt},
+    tick style={draw=rule, line width=0.4pt}, tick label style={font=\tinyfig},
+    label style={font=\smallfig}, title style={font=\smallfig\bfseries, yshift=-3pt},
+    every axis plot/.append style={line width=0.8pt, mark size=1.7pt},
+    clip=false},
+  sol/.style={color=seqSOL, mark=*},
+  tha/.style={color=seqTHA, mark=square*},
+  lon/.style={color=seqLON, mark=triangle*, mark size=2.2pt},
+}
+\newcommand{\bands}[2]{% xmin xmax : verdict bands (null < 2, graded 2-40, severe 40-80, collapse > 80)
+  \fill[okFill!70]   (axis cs:#1,0)  rectangle (axis cs:#2,2);
+  \fill[white]       (axis cs:#1,2)  rectangle (axis cs:#2,40);
+  \fill[modFill!70]  (axis cs:#1,40) rectangle (axis cs:#2,80);
+  \fill[failFill!80] (axis cs:#1,80) rectangle (axis cs:#2,100);}
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=3 by 1, horizontal sep=0.95cm, y descriptions at=edge left},
+    mapaxis]
+  % ---------------- B: loss only at LAN RTT ----------------
+  \nextgroupplot[title={B: loss, LAN RTT}, xmin=0.85, xmax=1.85,
+      xtick={1,1.25,1.5,1.75}, xticklabels={1,1.25,1.5,1.75},
+      xlabel={packet loss (\%)}, ylabel={GOFs not on time (\%)}]
+    \bands{0.85}{1.85}
+    \addplot[sol] coordinates {(1,2) (1.25,7) (1.5,20)};
+    \addplot[tha] coordinates {(1,16) (1.25,13) (1.5,32)};
+    \addplot[lon] coordinates {(1,17) (1.25,29) (1.5,70)};
+    \draw[ink, line width=0.5pt, dash pattern=on 1.5pt off 1pt] (axis cs:1.75,0) -- (axis cs:1.75,100);
+    \node[font=\tinyfig, anchor=north east, align=right] at (axis cs:1.735,97) {collapse\\$\geq$\,1.75\,\%};
+    \node[font=\tinyfig, text=oiBlue, anchor=south] at (axis cs:1.25,40.5) {candidate};
+    \draw[oiBlue, line width=0.5pt, dash pattern=on 0.8pt off 0.8pt] (axis cs:1.25,0) -- (axis cs:1.25,40.5);
+  % ---------------- C: delay only ----------------
+  \nextgroupplot[title={C: one-way delay, no loss}, xmin=37, xmax=63,
+      xtick={40,45,50,55,60}, xlabel={added one-way delay (ms)}]
+    \bands{37}{63}
+    \addplot[sol] coordinates {(50,6) (55,12)};
+    \addplot[tha] coordinates {(50,5) (55,14)};
+    \addplot[lon] coordinates {(50,3) (55,22)};
+    \draw[ink, line width=0.5pt, dash pattern=on 1.5pt off 1pt] (axis cs:60,0) -- (axis cs:60,100);
+    \node[font=\tinyfig, anchor=north east, align=right] at (axis cs:59.6,97) {collapse\\$\geq$\,60\,ms};
+    \node[font=\tinyfig, anchor=south, text=oiGreen!60!black] at (axis cs:40,2.5) {null};
+    \fill[oiGreen!60!black] (axis cs:40,0) circle (1.1pt);
+    \node[font=\tinyfig, text=oiBlue, anchor=south] at (axis cs:55,40.5) {candidate};
+    \draw[oiBlue, line width=0.5pt, dash pattern=on 0.8pt off 0.8pt] (axis cs:55,0) -- (axis cs:55,40.5);
+  % ---------------- D: 9 ms + loss ----------------
+  \nextgroupplot[title={D: 9\,ms delay + loss}, xmin=0.005, xmax=0.055,
+      xtick={0.01,0.02,0.03,0.04,0.05},
+      xticklabels={0.01,0.02,0.03,0.04,0.05},
+      scaled x ticks=false, xlabel={packet loss (\%)}]
+    \bands{0.005}{0.055}
+    \addplot[sol] coordinates {(0.02,2) (0.03,44)};
+    \addplot[tha] coordinates {(0.02,5) (0.03,34)};
+    \addplot[lon] coordinates {(0.02,24) (0.03,75)};
+    \draw[ink, line width=0.5pt, dash pattern=on 1.5pt off 1pt] (axis cs:0.05,0) -- (axis cs:0.05,100);
+    \node[font=\tinyfig, anchor=north east, align=right] at (axis cs:0.0492,97) {collapse\\$\geq$\,0.05\,\%};
+    \node[font=\tinyfig, anchor=south, text=oiGreen!60!black] at (axis cs:0.01,2.5) {null};
+    \fill[oiGreen!60!black] (axis cs:0.01,0) circle (1.1pt);
+    \node[font=\tinyfig, text=oiBlue, anchor=south] at (axis cs:0.02,40.5) {candidate};
+    \draw[oiBlue, line width=0.5pt, dash pattern=on 0.8pt off 0.8pt] (axis cs:0.02,0) -- (axis cs:0.02,40.5);
+\end{groupplot}
+% legend
+\begin{scope}[shift={(0.1,-1.25)}]
+  \draw[seqSOL, line width=0.8pt] (0,0) -- (0.5,0); \fill[seqSOL] (0.25,0) circle (1.7pt);
+  \node[font=\smallfig, anchor=west] at (0.55,0) {Soldier};
+  \draw[seqTHA, line width=0.8pt] (1.7,0) -- (2.2,0); \fill[seqTHA] (1.89,-0.06) rectangle (2.01,0.06);
+  \node[font=\smallfig, anchor=west] at (2.25,0) {ThaiDancer};
+  \draw[seqLON, line width=0.8pt] (3.75,0) -- (4.25,0);
+  \fill[seqLON] (4.0,0.08) -- (3.92,-0.06) -- (4.08,-0.06) -- cycle;
+  \node[font=\smallfig, anchor=west] at (4.3,0) {Longdress};
+  \foreach \c/\t/\x in {okFill!70/null ($<$2\%)/5.9, white/graded/7.55, modFill!70/severe/8.85, failFill!80/collapse ($>$80\%)/10.05}{
+    \filldraw[fill=\c, draw=rule, line width=0.3pt] (\x,-0.08) rectangle ++(0.3,0.16);
+    \node[font=\smallfig, anchor=west] at (\x+0.32,0) {\t};}
+\end{scope}
+\end{tikzpicture}
+\end{document}
