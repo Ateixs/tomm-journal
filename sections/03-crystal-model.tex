@@ -8,9 +8,44 @@
 temporal smoothness caused by delay and loss, relative to an
 impairment-free presentation of the same content. It does not model
 compression fidelity, which is fixed per sequence and reported through
-\pcqm as a stimulus descriptor, and it does not model overall MOS as a
+\pcqm as a stimulus descriptor, and it does not model overall \mos as a
 combination of fidelity and smoothness. The rated attribute in the
-subjective study is smoothness of playback.
+subjective study is smoothness of playback. One quantity in the model
+is fitted to ratings ($\alpha$), one is measured on the clean slice
+($\qc$), and everything else is a transport fact, a client property or
+a session counter (Table~\ref{tab:notation}).
+
+\begin{table}[t]
+  \caption{Notation. Values in parentheses are those of the campaign
+  client of Section~\ref{sec:system}.}
+  \label{tab:notation}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Symbol & Meaning & Source \\
+    \midrule
+    $G$, $F$ & \gof size (frames), frame rate & encoder \\
+    $T_G = G/F$ & content-clock period of one delivery unit & derived (\SI{133.3}{\milli\second} at $G=4$) \\
+    $f$ & client render-frame length & client, logged per session (\SI{30}{\milli\second}) \\
+    $B_{\mathrm{eff}} = f(\lfloor T_G/f \rfloor - 1)$ & per-unit budget after frame quantization & derived (\SI{90}{\milli\second}) \\
+    $d$ & added one-way delay & network condition \\
+    $\tau_{\mathrm{dl}}$ & clean transfer time of a unit & pipeline log at $P=0$ ($\approx$35--\SI{39}{\milli\second}) \\
+    $S(d) = B_{\mathrm{eff}} - \tau_{\mathrm{dl}} - d$ & slack: margin left for loss recovery & derived \\
+    $P$ & packet loss rate & network condition \\
+    $N_p$ & packets per unit & log ($\approx$471--517) \\
+    $\mu = P N_p$ & expected losses per unit & derived \\
+    $r(d) = r_0 + \kappa d$ & effective cost of one loss, incl.\ window cut & server transport logs \\
+    $K(d) = \lfloor S(d)/r(d) \rfloor$ & losses a unit can absorb & derived \\
+    $H$ & decoder lead over the content clock & client ($\approx$\SI{550}{\milli\second}, $\approx$4 units) \\
+    $\tlf$ & skip fraction: (skipped + jumped) / due & session counters \\
+    $\phi$ & freeze fraction: units shown late / due & session counters \\
+    $\qc$ & clean-reference ceiling, $(\mosm_{A,c} - 1)/4$ & measured, Slice~A \\
+    $\alpha$ & perceptual sensitivity to lost playout & fitted to ratings \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Delivery Unit and Loss Recovery}
 \label{sec:model-unit}
@@ -25,223 +60,256 @@ or \gls{ldp} with I- and P-frames and \gofs of 16 or
 4~\cite{vpccctc,hmctc}. A \gof must be received in full before any of
 its frames can be reconstructed, and in a streaming deployment it
 carries a presentation deadline. The \gof is therefore the
-\emph{delivery unit}, and its size is the structural variable of the
-model: a smaller \gof puts fewer packets at risk but leaves a tighter
-deadline budget.
+\emph{delivery unit}, and its size sets the budget within which a
+disturbance must be absorbed.
 
 The second is loss recovery. Each \gof is fetched as one HTTP object
-over \gls{http3}~\cite{rfc9114}, so every packet of a unit travels on
-one \quic stream~\cite{rfc9000}. Standard \quic never reuses packet
-numbers and declares a packet lost either when one at least
+over \gls{http3}~\cite{rfc9114} on one \quic stream~\cite{rfc9000}.
+\quic declares a packet lost either when a packet at least
 $k_{\mathrm{PacketThreshold}}=3$ later is acknowledged or, if no later
-acknowledgement arrives, when a \gls{pto} expires~\cite{rfc9002}:
+acknowledgment arrives, when a \gls{pto} expires~\cite{rfc9002}:
 \begin{equation}
   \mathrm{PTO} = \mathrm{sRTT} + \max(4\,\mathrm{RTT}_{\mathrm{var}},
   k_{\mathrm{granularity}}) + \mathrm{max\_ack\_delay}.
   \label{eq:pto}
 \end{equation}
-A loss therefore costs at least one round trip, and a full \gls{pto}
-when the lost packet is among the last of the unit, and each recovery
-is followed by a congestion-window reduction that persists into later
+A loss therefore costs at least one round trip, and each recovery is
+followed by a congestion-window reduction that persists into later
 transfers. Because \quic is reliable, the decoder never receives an
 incomplete \gof: loss becomes \emph{delay}, and delay becomes a
-\emph{stall} when the unit misses its deadline. Our measurements show
-the two impairments leave distinct signatures, added latency shifting
-the delivery-time distribution and loss expanding its
-tail~\cite{vquest2026}, and that the per-\gof deadline-miss rate
-correlates only partially with subjective quality ($\rho = -0.34$)
-because a missed \gof of 4 frames and one of 16 frames remove different
-durations of content~\cite{mosaic2026}. The temporal loss fraction
-defined next closes that gap.
+\emph{freeze} or a \emph{skip} when the unit misses its presentation
+time. Our measurements show the two impairments leave distinct
+signatures, added latency shifting the delivery-time distribution and
+loss expanding its tail~\cite{vquest2026}, and that the per-\gof
+deadline-miss rate correlates only partially with subjective quality
+($\rho = -0.34$) because a missed \gof of 4 frames and one of 16
+frames remove different durations of content~\cite{mosaic2026}.
 
-\subsection{Layer 1: Transport Model}
+\subsection{Layer 1: One Perceptual Channel}
 \label{sec:model-layer1}
 
-Layer~1 maps the network condition and the encoder configuration to a
-single observable, the \emph{temporal loss fraction} $\tlf$, the share
-of wall-clock playback time during which the renderer is not showing
-the frame it should. It contains no perceptual quantity: every term is
-either a transport parameter or a property of the bitstream, and every
-intermediate is measurable from the renderer's telemetry.
-
-\paragraph{Delivery unit and deadline.}
-The stream is a sequence of delivery units $k = 1, 2, \ldots$; for
-\vpcc the delivery unit is the \gof, with $G$ frames at frame rate $f$
-and nominal duration $T_u = G/f$. Unit $k$ has $n_k = \lceil B_k / P
-\rceil$ packets, where $B_k$ is its encoded size and $P$ the payload per
-\quic packet (up to \SI{1419}{B} on the testbed,
-Section~\ref{sec:sys-stage1}). The client fetches units over a
-persistent \gls{http3} connection with a scheduler that keeps $W$ units
-in flight ($W=1$ in this study, Section~\ref{sec:sys-edge}) and starts
-unit $k$ at $r_k$; the unit must be decoded by its presentation
-deadline $d_k$. Under no impairment, delivery takes $D^0_k = \rho +
-B_k/C$, one round trip $\rho$ for the request plus transfer at goodput
-$C$, and the \emph{slack}
+\subsubsection{Premises and claim}
+Layer~1 rests on two premises. Under \emph{reliable transport}, a lost
+packet never corrupts a decoded unit; it delays the unit's arrival.
+Under \emph{deadline-enforced buffered playout}
+(Section~\ref{sec:sys-edge}), the client keeps one request in flight
+and feeds a decoder that holds about $H$ of content ahead of the
+content clock; each unit has a fixed presentation time, a unit arriving
+slightly late is shown after a brief freeze, and a unit arriving more
+than one period late is skipped. Delay is invisible while the per-unit
+cycle keeps pace with the content clock. From the session counters of
+the client we define
 \begin{equation}
-  S_k = d_k - r_k - D^0_k
-  \label{eq:slack}
-\end{equation}
-is the budget the unit has for absorbing a disturbance. $S_k$ is set by
-the depth $W$ and the pacing of the scheduler, grows with $T_u$,
-and is read directly from Slice~A telemetry rather than modelled.
-
-\paragraph{How delay and loss consume slack.}
-Added one-way latency $\ell$ raises the round trip to $\rho' = \rho +
-2\ell$ and so adds $2\ell$ to every unit's delivery time; it also
-lowers the goodput a window-limited transfer can reach, which we fold
-into $C(\rho')$. Packet loss at rate $p$ never removes data from the
-stream: a unit with at least one lost packet, which happens with
-probability $1 - (1-p)^{n_k} \approx n_k p$, is completed only after
-recovery. Each loss event costs a recovery time $R$ that is at least
-one round trip when later packets keep flowing and a full \gls{pto}
-when the lost packet is among the last of the unit (a tail loss),
-\begin{equation}
-  R(\rho') = \rho' + \pi_{\mathrm{tail}}\,[\mathrm{PTO}(\rho') - \rho'],
-  \qquad \pi_{\mathrm{tail}} \approx \frac{k_{\mathrm{PacketThreshold}}}{n_k},
-  \label{eq:recovery}
-\end{equation}
-with $\mathrm{PTO}$ from Eq.~\eqref{eq:pto}; the accompanying
-congestion-window reduction lowers $C$ for the following units and is
-absorbed into $C(\rho')$ as a measured, not fitted, quantity. With
-$L_k \sim \mathrm{Binomial}(n_k, p)$ loss events, the delivery time of
-unit $k$ under impairment is
-\begin{equation}
-  D_k = 2\ell + \frac{B_k}{C(\rho')} - \frac{B_k}{C} + L_k\, R(\rho'),
-  \label{eq:delay}
-\end{equation}
-and the unit misses its deadline when $D_k > S_k$.
-
-\paragraph{From misses to temporal loss.}
-The renderer's policy on a miss (Section~\ref{sec:sys-edge}) runs on a
-content clock that never pauses: the late unit is dropped and the last
-good unit is held, so a miss costs
-the viewer the $G$ frames of that unit, shown as a freeze of length
-$T_u$ followed by a skip. A unit that arrives late but within the
-hold window contributes a freeze of length $\tau_k = \max(0, D_k -
-S_k)$. Over a session of $N$ units the temporal loss fraction is
-\begin{equation}
-  \tlf = \frac{1}{N\,T_u}\sum_{k=1}^{N}\Big[\tau_k + T_u\,\mathbb{1}(D_k - S_k > H)\Big]
-  \;=\; \crystallayerone,
+  \tlf = \frac{\text{units skipped} + \text{units jumped over}}{\text{units due}},
+  \qquad
+  \phi = \frac{\text{units shown late}}{\text{units due}}.
   \label{eq:tlf}
 \end{equation}
-where $H$ is the hold window after which the unit is dropped (one unit
-duration, \SI{133}{\milli\second} at \gof{}=4, in the scheduler), and the
-second form is the operational definition measured from telemetry: one
-minus the ratio of frames rendered on schedule to frames due. Taking
-expectations over $L_k$ gives $\tlf$ as a function of
-$(\ell, p, G, B_k, S_k, \rho, C)$ with no free parameter; the
-$B_k$, $S_k$, $\rho$ and $C$ are measured on the clean slice and the
-rest are experimental settings.
 
-\paragraph{Two consequences.}
-Equation~\eqref{eq:delay} contains the model's two structural claims.
-First, each impairment degrades $\tlf$ on its own, and the two do not
-add. For a single unit a miss is a threshold event in the combined
-load $2\ell + L_k R$ against the slack $S_k$; across a session the
-slack, size and loss count vary from unit to unit, so the
-session-level $\tlf$ is a smooth, convex function of the load: added
-latency alone pushes the units with the least slack over their
-deadlines, loss alone does the same for the units that draw the most
-recovery, and when both are present every unit faces the sum of the
-two, so the units that each impairment alone would have spared are
-now lost too. The model therefore predicts graded single-factor
-effects and a super-additive combination: $\mos_A > \mos_B$,
-$\mos_A > \mos_C$, and $(\mos_A - \mos_D) > (\mos_A - \mos_B) +
-(\mos_A - \mos_C)$. An additive form such as Eq.~\eqref{eq:udora}
-cannot produce the last inequality.
-Second, the \gof size $G$ enters on both sides of the inequality. A
-larger unit has more packets at risk ($n_k \propto G$) and so more loss
-events per unit, but it also has proportionally more slack ($S_k$
-grows with $T_u = G/f$) and amortises the fixed per-request cost
-$2\ell$ over $G$ frames; the per-frame cost of latency falls as $1/G$
-while the per-frame cost of loss is roughly constant. For the
-loss-dominated and latency-dominated regimes of the factorial design
-this predicts that \gls{ldp} \gof{}=16 is \emph{more} resilient than
-\gof{}=4 at matched impairment, the opposite of the intuition that
-shorter units limit damage, and the opposite of what loss magnitude
-alone would predict.
+\emph{Claim 1.} Perceived smoothness depends on the network only
+through presentation timing, $(\tlf, \phi)$. Delay and loss have no
+perceptual channel of their own: at equal $(\tlf, \phi)$, ratings do
+not depend on whether the misses came from loss, delay or both, and
+impaired sessions with $\tlf \approx 0$ rate like the clean slice.
+Claim~1 is the hypothesis the subjective study tests; the rest of the
+model takes it as given and explains how $\tlf$ arises.
+
+\subsubsection{When is a unit slow?}
+\label{sec:model-slow}
+Consider one unit. Its fetch takes
+\begin{equation}
+  t_f = d + \tau_{\mathrm{dl}} + \sum_{i=1}^{n} r_i(d),
+  \label{eq:fetch}
+\end{equation}
+the added delay, the clean transfer time and the cost of each of its
+$n$ loss events. The client notices completion at the next render-frame
+boundary and hands the unit on one frame later, so the cycle costs
+$c = f\lceil t_f/f \rceil + f$. The client keeps pace while $c \le T_G$,
+which, since $\lceil t_f/f \rceil$ is an integer, is equivalent to
+\begin{equation}
+  t_f \le B_{\mathrm{eff}} = f\left(\left\lfloor \frac{T_G}{f}\right\rfloor - 1\right).
+  \label{eq:budget}
+\end{equation}
+With $T_G = \SI{133.3}{\milli\second}$ and $f = \SI{30}{\milli\second}$,
+$B_{\mathrm{eff}} = \SI{90}{\milli\second}$; a continuously polling
+client has $B_{\mathrm{eff}} \to T_G$. Subtracting the parts spent
+before any loss occurs leaves the slack
+\begin{equation}
+  S(d) = B_{\mathrm{eff}} - \tau_{\mathrm{dl}} - d.
+  \label{eq:slack}
+\end{equation}
+Delay therefore acts on its own, before any loss: a unit is slow with
+zero loss once $d > B_{\mathrm{eff}} - \tau_{\mathrm{dl}}$. With
+$\tau_{\mathrm{dl}} \approx$ 35--\SI{39}{\milli\second} this predicts a
+pure-delay threshold of 51--\SI{55}{\milli\second}, with no fitted
+parameter; the calibration scan of Section~\ref{sec:calibration}
+measured 50--\SI{55}{\milli\second}.
+
+The number of loss events per unit is $n \sim \mathrm{Poisson}(\mu)$,
+$\mu = P N_p$, the Poisson approximation to $\mathrm{Binomial}(N_p, P)$
+at $P \le 1\%$. Each loss costs detection
+and retransmission, both scaling with the round-trip time
+(Eq.~\eqref{eq:pto}), and a congestion-window cut (NewReno,
+$\beta = 0.7$) that an application-limited sender does not regrow
+before the next unit, so one loss also slows the units that follow. We
+fold all of this into one effective per-loss cost,
+\begin{equation}
+  r(d) = r_0 + \kappa d,
+  \label{eq:recovery}
+\end{equation}
+with $r_0$ and $\kappa$ estimated from the server transport logs, not
+from ratings. Because the window effect spans units, $r$ is an
+effective quantity and this stage is a per-unit approximation of a
+process with short memory. With $K(d) = \lfloor S(d)/r(d) \rfloor$
+losses absorbable per unit, the probability that a unit is slow is
+\begin{equation}
+  p_{\mathrm{slow}}(d,P) =
+  \begin{cases}
+    1 - \displaystyle\sum_{k=0}^{K(d)} \frac{e^{-\mu}\mu^k}{k!}, & S(d) \ge 0,\\[3mm]
+    1, & S(d) < 0.
+  \end{cases}
+  \label{eq:pslow}
+\end{equation}
+Delay enters twice (it shrinks $S$ and raises $r$); loss enters once
+(through $\mu$).
+
+\subsubsection{From slow units to skips}
+\label{sec:model-drain}
+A slow unit is not yet a skip. The decoder's lead over the content
+clock evolves as
+\begin{equation}
+  L_{k+1} = \min\big(H,\; L_k + T_G - c_k\big),
+  \label{eq:drain}
+\end{equation}
+and a unit is skipped once the lead has drained past one period. This
+is a reflected random walk with drift $T_G - \mathbb{E}[c]$, which
+yields two regimes. In the \emph{graded} regime
+($\mathbb{E}[c] < T_G$), isolated slow units are absorbed; skips occur
+only when a run of slow units drains the lead, so they arrive in blocks
+and sessions at identical settings differ widely (the calibration
+measured 6\% and 55\% at one setting). In the \emph{collapse} regime
+($\mathbb{E}[c] \ge T_G$), the lead drains in about
+$H/(\mathbb{E}[c] - T_G)$ units and does not recover; for pure delay
+the boundary $\mathbb{E}[c] = T_G$ reduces to the threshold of
+Section~\ref{sec:model-slow}. The map from $p_{\mathrm{slow}}$ to
+$\tlf$ has no closed form, since it depends on $H$ and on the skip
+policy. Layer~1 therefore uses Eq.~\eqref{eq:pslow} to locate the
+regimes and explain the interaction, reproduces $\tlf$ by Monte Carlo
+simulation of Eq.~\eqref{eq:drain}, and hands the \emph{measured}
+$\tlf$ of each session to Layer~2.
+
+\subsubsection{Non-separability and delivery-unit size}
+\label{sec:model-interaction}
+Equation~\eqref{eq:pslow} is a Poisson tail whose cutoff $K$ depends
+on delay and whose mean $\mu$ depends on loss. Its mixed derivative
+$\partial^2 p_{\mathrm{slow}}/\partial d\,\partial P$ is non-zero,
+whereas a separable model, additive or multiplicative in $d$ and $P$,
+requires it to vanish. The operating points of
+Section~\ref{sec:design-network} make this concrete: delay alone at
+\SI{9}{\milli\second} leaves $S \approx \SI{44}{\milli\second}$, below
+threshold, so no misses; loss alone at the chosen rate gives
+$\mu < 1$, so no misses at LAN delay; together, 50--78\% of units are
+slow, where the additive prediction is zero. For $\mu \approx 0.25$ to
+produce that, one loss must cost more than the whole slack;
+retransmission at \SI{9}{\milli\second} does not, the window cut does,
+which is why $r(d)$ is effective rather than nominal. The delivery-unit
+size enters through the budget: $B_{\mathrm{eff}}$ and $S$ grow with
+$G$ while $r(d)$ does not, so a larger \gof absorbs more losses per
+unit. The present study fixes $G = 4$, so this prediction rests on the
+earlier \gls{ra} and \gls{ldp} measurements~\cite{mosaic2026} and is
+stated, not retested (Section~\ref{sec:conclusion}).
 
 \subsection{Layer 2: Perceptual Model}
 \label{sec:model-layer2}
 
-Layer~2 maps $\tlf$ to the mean opinion score of the rated attribute,
-playback smoothness. We adopt the IQX relation of Fiedler et
-al.~\cite{fiedler2010}: the sensitivity of perceived quality to an
-additional unit of impairment is proportional to the quality that
-remains, $\mathrm{d}Q/\mathrm{d}\tlf = -\alpha\,(Q - Q_{\min})$, whose
-solution on the five-point \gls{acr} scale with floor $Q_{\min} = 1$ is
+Layer~2 maps $\tlf$ to the mean opinion score of the rated attribute.
+Let $M(\tlf)$ be the expected rating on the five-point \gls{acr}
+scale, with $M(0) = M_{0,c}$, the clean-reference rating of content
+$c$, and $M \to 1$ as playout vanishes. The IQX hypothesis of Fiedler
+et al.~\cite{fiedler2010} gives the shape: sensitivity to an
+impairment is proportional to the quality headroom above the floor,
+$\mathrm{d}M/\mathrm{d}\tlf = -\alpha (M - 1)$. Integrating with
+$M(0) = M_{0,c}$ and normalizing the ceiling to the scale,
+$\qc = (M_{0,c} - 1)/4 \in (0, 1]$,
 \begin{equation}
-  \crystalmodel,
+  \crystalmodel.
   \label{eq:crystal}
 \end{equation}
-where $\qc \in (0, 1]$ is the clean-reference ceiling of content $c$
-and $\alpha > 0$ is the single perceptual parameter. The ceiling is
-not fitted: it is anchored to the clean slice,
+This is the \crystal model. The 1 and 4 are the \gls{acr} scale; $\qc$
+is read off Slice~A, where $\tlf = 0$ and the equation collapses to
+$1 + 4\qc$ identically,
 \begin{equation}
-  \qc = \frac{\mosm_{A,c} - 1}{4},
+  \qc = \frac{\mosm_{A,c} - 1}{4};
   \label{eq:ceiling}
 \end{equation}
-so that the model reproduces the impairment-free rating of each
-content by construction and $\alpha$ carries only the response to
-temporal loss. The model has the boundary behaviour required of a
-smoothness score, $\widehat{\mosm} \to 1 + 4\qc$ as $\tlf \to 0$ and
-$\widehat{\mosm} \to 1$ as $\tlf \to \infty$, and $\alpha$ has a direct
-reading: $\tlf_{1/2} = \ln 2/\alpha$ is the temporal loss at which the
-rating has lost half its headroom above the floor.
+and $\alpha$ is the single fitted parameter, with the reading
+$\tlf_{1/2} = \ln 2/\alpha$, the skip fraction at which perceived
+smoothness has lost half its headroom. Because the clean slice is
+rendered without stalls, the three $\qc$ are expected to be close to
+one and statistically indistinguishable, in which case
+Eq.~\eqref{eq:crystal} is a one-parameter curve shared by all content.
+Objective fidelity does not enter the equation: spatial quality is
+fixed within a session and has no bearing on perceived smoothness, so
+a coefficient on \pcqm would only absorb variance that belongs to
+content.
 
-Two design decisions follow from the rated attribute. Objective
-fidelity does not enter Eq.~\eqref{eq:crystal}: \pcqm is reported per
-sequence as a stimulus descriptor (Section~\ref{sec:sys-content}), but
-spatial fidelity is fixed within a session and has no bearing on
-perceived smoothness, so giving it a coefficient would only absorb
-variance that belongs to content. And because the clean slice is
-rendered without stalls, the model predicts that the three $\qc$ are
-close to one and statistically indistinguishable, in which case
-Eq.~\eqref{eq:crystal} collapses to $\widehat{\mosm} = 1 + 4e^{-\alpha\tlf}$,
-a one-parameter curve shared by all content.
+\emph{Freeze extension.} We also fit
+$1 + 4\qc\,e^{-\alpha\tlf - \alpha_\phi \phi}$ and test
+$\alpha_\phi = 0$. If freezes carry no weight beyond skips, the base
+model stands; if they do, $\alpha_\phi$ is reported and Claim~1 holds
+in its two-variable form either way. This test is specified before
+data collection.
 
-The two layers are falsifiable separately. Layer~1 predicts a measured
-quantity, $\tlf$, from settings and clean-slice telemetry, and can be
-checked against the renderer's deadline log without any rating.
-Layer~2 is fitted on measured $\tlf$, not on modelled $\tlf$, so an
-error in Layer~1 cannot be hidden by $\alpha$; conversely, a good
-Layer~2 fit on measured $\tlf$ with a poor Layer~1 prediction would
-locate the failure in the transport model alone. Compared with
-Eq.~\eqref{eq:udora}, which fits delay and loss directly with five
-coefficients per quality level, \crystal moves the explanatory burden
-into a derived variable and leaves one constant to be learned from
-people.
+Compared with Eq.~\eqref{eq:udora}, which fits delay and loss directly
+with per-level coefficients, \crystal moves the explanatory burden into
+a measured variable and leaves one constant to be learned from people.
+The two layers are falsifiable separately: Layer~1 predicts logged
+quantities from settings and clean-slice telemetry and can be checked
+without any rating; Layer~2 is fitted on measured $\tlf$, so an error
+in Layer~1 cannot be hidden by $\alpha$.
 
-\subsection{Model Predictions}
+\subsection{Predictions}
 \label{sec:model-predictions}
-Because $\tlf$ is derived rather than fitted, the model commits to
-three predictions before any rating is collected, and the evaluation of
-Section~\ref{sec:results} is organised around them.
+Layer~1 makes four predictions, each checked against logs without a
+rater (Table~\ref{tab:predictions}); Layer~2 is checked against
+ratings. The subjective study tests Claim~1 in two forms. First, across
+the impaired slices of Section~\ref{sec:design-network}, ratings fall
+on one curve in $\tlf$: once $\tlf$ (and $\phi$) are accounted for,
+slice identity explains no further variance. Second, the single
+$\alpha$ fitted on a subset of conditions predicts held-out conditions
+without refitting, at a held-out \gls{plcc} exceeding the 0.57--0.66
+of Eq.~\eqref{eq:udora}. Non-separability of delay and loss is a
+Layer~1 prediction: the combined slice~D is built from a delay and a
+loss level that are each null on their own
+(Section~\ref{sec:calibration}).
 
-\emph{Latency and loss each degrade quality, and together they
-degrade it more than additively.} Both impairments consume the same
-per-unit slack in Eq.~\eqref{eq:delay}, so each alone produces a
-measurable temporal loss and a \mos drop, and their combination
-produces a drop larger than the sum of the two, which an additive form
-such as Eq.~\eqref{eq:udora} cannot reproduce. Across the four slices
-of Section~\ref{sec:design-network} the model predicts
-$\mos_A > \mos_B,\, \mos_C > \mos_D$ with
-$(\mos_A - \mos_D) > (\mos_A - \mos_B) + (\mos_A - \mos_C)$.
+\begin{table}[t]
+  \caption{Layer~1 predictions and how each is checked.}
+  \label{tab:predictions}
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}X@{}}
+    \toprule
+    Prediction & Form & Checked against \\
+    \midrule
+    Pure-delay threshold $d^\ast = B_{\mathrm{eff}} - \tau_{\mathrm{dl}}$ & closed form, no parameter & delay scan (51--55 predicted, 50--\SI{55}{\milli\second} measured) \\
+    Slow-unit probability $p_{\mathrm{slow}}(d,P)$ & closed form, $r_0$ and $\kappa$ from logs & logged slow-unit fraction per session \\
+    Skip fraction $\tlf$ and its between-session spread & Monte Carlo of Eq.~\eqref{eq:drain} & logged $\tlf$ per session \\
+    Regime boundary $\mathbb{E}[c] = T_G$ & derived & where sessions collapse \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
-\emph{Delivery-unit structure, not loss magnitude, governs
-resilience.} For fixed delay and loss, $\tlf$ depends on the \gof size
-$G$ through both the number of packets at risk per unit and the slack
-available to recover them, and Layer~1 predicts that \gls{ldp}
-\gof{}=16 is more resilient than \gof{}=4 at matched impairment.
-
-\emph{One perceptual parameter generalises.} A single $\alpha$ fitted
-on one subset of conditions predicts held-out conditions without
-refitting, at a held-out \gls{plcc} exceeding the 0.57--0.66 reported
-for the five-coefficient regression of Eq.~\eqref{eq:udora}.
-
-\subsection{Parameter Estimation}
-\label{sec:model-fit}
-\todo{$\alpha$ by non-linear least squares on per-slice \mos; bootstrap
-confidence intervals; \gls{clmm} with participant and content as
-random effects; held-out evaluation by leaving one slice or one content
-out.}
+The model's assumptions, in order of entry, are: loss produces no
+visual artifact (reliable transport); delay is invisible while the
+per-unit cycle keeps pace (buffered deadline playout); perceived
+smoothness depends on the network only through $(\tlf, \phi)$
+(Claim~1, tested); the IQX sensitivity law (inherited; carries the one
+fitted constant); independent, Poisson-approximated loss; an affine
+effective recovery cost in $d$ with measured parameters; a per-unit
+budget set by the client's render frame, logged per session and held
+constant across participants; and skips arising from a buffer drain
+rather than from independent per-unit failures, with $\tlf$ measured
+per session. Only the third is new, and only the fourth carries a
+fitted constant; the last two are client properties, so the results
+transfer to clients with the same frame and buffer.

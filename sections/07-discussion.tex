@@ -2,16 +2,22 @@
 \label{sec:discussion}
 
 \subsection{Why One Parameter Suffices}
-\todo{Interpret: the five coefficients of Eq.~\eqref{eq:udora} absorb
-what $\tlf$ expresses; delivery-unit structure as the coupling
-mechanism; why larger \gls{ldp} \gof is more robust.}
+\todo{Interpret: the per-level coefficients of Eq.~\eqref{eq:udora}
+absorb what $\tlf$ expresses; the interaction lives in the transport
+layer, not in perception; what the fitted $\alpha$ and $\tlf_{1/2}$
+mean for a viewer.}
 
 \subsection{Implications for Private \fiveg Dimensioning}
-\todo{Keep brief here; a full tutorial treatment is out of scope.}
+\todo{Keep brief: the pure-delay threshold and the loss ladder at
+\SI{9}{\milli\second} as operating envelopes; a full tutorial treatment
+is out of scope.}
 
 \subsection{Limitations}
-\todo{Internal (emulation vs.\ live impairment), external (content,
-\hmd model, single testbed), construct (\mos vs.\ task performance).}
+\todo{Internal (emulation at the origin versus live radio impairment;
+one client with $f$ and $H$ fixed), external (three contents, one
+\hmd, one testbed), construct (\mos on smoothness versus task
+performance); the effective recovery cost $r(d)$ as a per-unit
+approximation of a process with memory.}
 
 \subsection{Extension to Other Representations}
 \label{sec:model-predict}
@@ -19,9 +25,8 @@ mechanism; why larger \gls{ldp} \gof is more robust.}
 uncompressed per-frame streaming and the frame-independent delivery
 of~\cite{vquest2026} as external checks.} 3D Gaussian
 Splatting~\cite{kerbl2023gaussian} is acquiring a streaming literature
-of its own, from layered \gls{dash} delivery~\cite{sun2025lts} to real-time mobile
-full-scene delivery~\cite{vega2025mobicom}, evaluated with objective
-rendering metrics. Because each Gaussian primitive is independently
-decodable, a splat stream has no \gof coupling in the sense of
-Section~\ref{sec:model-unit}. \todo{State what $\tlf$ predicts for
+of its own~\cite{sun2025lts}, evaluated with objective rendering
+metrics. Because each Gaussian primitive is independently decodable, a
+splat stream has no \gof coupling in the sense of
+Section~\ref{sec:model-unit}. \todo{State what Layer~1 predicts for
 \threedgs and what observation would falsify it.}

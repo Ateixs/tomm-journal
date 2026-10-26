@@ -11,7 +11,7 @@ tier (A) with \gls{ra} \gof{}=32; a loss-dominant tier (B, 1.9\% loss,
 \SI{5}{\milli\second} added latency) with \gls{ldp} \gof{}=16; and a
 latency-dominant tier (C, 0.6\% loss, \SI{9}{\milli\second}) with
 \gls{ldp} \gof{}=4. The three sequences were rated in a fixed order on
-the \gls{acr} scale. Figure~\ref{fig:pilot} summarises the outcome.
+the \gls{acr} scale. Figure~\ref{fig:pilot} summarizes the outcome.
 Mean opinion fell monotonically from 4.72 (A) to 4.07 (B) and 3.21
 (C), with the strongest content dependence on Longdress
 ($4.89 \rightarrow 2.21$), the most attribute-dominated bitstream
@@ -46,10 +46,11 @@ controller reclaimed throughput after each recovery.
 \end{figure}
 
 Four lessons shape the present design. Impairment and encoder
-configuration were confounded in every tier, so the factorial slices
-below hold the encoder fixed. The deadline-miss rate is an incomplete
-predictor, so the analysis uses the temporal loss fraction $\tlf$,
-which weights each miss by the content it removes. The presentation
+configuration were confounded in every tier, so the slices below hold
+the encoder fixed, the clean reference included. The deadline-miss
+rate is an incomplete predictor, so the analysis uses the skip
+fraction $\tlf$ of the client's session counters and tests whether it
+is the only channel. The presentation
 order was fixed, so the present study balances it with a Latin square.
 And goodput was not the limiting resource, so impairment is applied as
 loss and added latency rather than as bandwidth caps.
@@ -57,51 +58,47 @@ loss and added latency rather than as bandwidth caps.
 \subsection{Network Conditions}
 \label{sec:design-network}
 
-Four slices share one origin and one renderer
-and differ only in the impairment applied at the origin's egress
-(Table~\ref{tab:impairments}). Slice~A is the clean reference: no
-added loss or latency, \gls{ra} \gof{}=32, the profile an adaptive
-service would choose on an unimpaired path, and the slice from which
-the ceilings $\qc$ of Eq.~\eqref{eq:ceiling} and the slack $S_k$ of
-Eq.~\eqref{eq:slack} are measured. Slices B, C and D form a $2\times2$
-factorial on loss and added latency at a fixed encoder, \gls{ldp}
-\gof{}=4: B applies loss only, C latency only, and D both at the same
-levels, so that the single-factor effects and their combination are
-estimated from the same stimuli. A fifth block, E, repeats the D
-impairment at \gls{ldp} \gof{}=16 and provides the delivery-unit
-contrast of Section~\ref{sec:model-layer1}; it is a separate rating
-block rather than a factor, because its purpose is to test the
-structural prediction at one operating point, not to map the
-\gof\,$\times$\,impairment plane.
+Four slices share one origin, one renderer and one encoding of each
+sequence, \gls{ldp} \gof{}=4, and differ only in the impairment
+applied at the origin's egress (Table~\ref{tab:impairments}). Holding
+the encoder fixed across slices is what the three-tier study could not
+do; it makes Slice~A, with no added loss or delay, a valid reference
+for B, C and D, and it is the slice from which the ceilings $\qc$ of
+Eq.~\eqref{eq:ceiling}, the clean transfer time $\tau_{\mathrm{dl}}$
+and the packet counts $N_p$ of Section~\ref{sec:model-layer1} are
+measured. Slice~B applies loss only and Slice~C delay only, each at a
+level that produces a graded effect on its own. Slice~D combines a
+delay and a loss level that are each \emph{null} on their own, so that
+any effect it produces is the interaction of Eq.~\eqref{eq:pslow} and
+not the sum of two single-factor effects. The design therefore tests
+Claim~1 across three impaired slices whose misses have three different
+transport origins, loss, delay and their interaction, and tests
+non-separability at the transport level without requiring a
+collapsed combined slice. \todo{Confirm from the campaign scene that
+the content path of all twelve conditions (three sequences $\times$
+A--D) is the \texttt{\_LD\_gof4\_} encode, Slice~A included.}
 
-\paragraph{Calibration.}
+\subsubsection{Calibration}
 \label{sec:calibration}
-The impairment levels are chosen so that each condition produces a
-measurable but not saturating effect. They are located with the
-headless harness and the server capture of
-Section~\ref{sec:sys-measurement}, which scanned 29 impairment levels
-in 129 sessions (Figure~\ref{fig:transport-map}). Loss alone at the
-LAN round-trip time produces graded misses at 1--1.25\% and collapse
-from 1.75\%; delay alone produces graded misses at
-50--\SI{55}{\milli\second} one way and collapse from
-\SI{60}{\milli\second}. With \SI{9}{\milli\second} of added delay, a loss
-of 0.02\% is already graded and 0.05\% collapses: the same graded
-effect needs 60 times less loss once \SI{9}{\milli\second} of delay is
-present, the loss--delay interaction that the study measures. All three
+The impairment levels are located with the headless harness and the
+server capture of Section~\ref{sec:sys-measurement}, which scanned 29
+impairment levels in 129 sessions (Figure~\ref{fig:transport-map}).
+Loss alone at the LAN round-trip time produces graded misses at
+1--1.25\% and collapse from 1.75\%; delay alone produces graded misses
+at 50--\SI{55}{\milli\second} one way and collapse from
+\SI{60}{\milli\second}, as Eq.~\eqref{eq:slack} predicts. With
+\SI{9}{\milli\second} of added delay, a loss of 0.02\% is already
+graded and 0.05\% collapses: the same graded effect needs 60 times
+less loss once \SI{9}{\milli\second} of delay is present, although
+\SI{9}{\milli\second} alone and 0.02\% alone are both null. All three
 ladders break at the same point: a level survives while the median
-fetch takes three Unity frames (\SI{90}{\milli\second}) and collapses
-at four. Longdress, which needs the most packets per \gof, is the
-least tolerant sequence under loss. Loss is random (Bernoulli) and
-delay constant without jitter, so the slack a unit consumes is
-deterministic apart from loss, and the renderer's telemetry records
-for every unit the request time, completion time and deadline outcome
-from which $\tlf$ is computed (Eq.~\eqref{eq:tlf}). Harness values are
-candidates; each slice is confirmed with a Unity lap before it is
-rated. \todo{Harness candidates set D at \SI{9}{\milli\second} + 0.02\%,
-not at the B and C levels; reconcile with the ``same levels'' factorial
-above. The implementation notes also state that all rated conditions
-use \gls{ldp} \gof{}=4: confirm Slice~A (\gls{ra} 32) and block E
-(\gof{}=16).}
+fetch takes three Unity frames (\SI{90}{\milli\second},
+Eq.~\eqref{eq:budget}) and collapses at four. Longdress, which needs
+the most packets per \gof, is the least tolerant sequence under loss.
+Loss is random (Bernoulli) and delay constant without jitter, so the
+slack a unit consumes is deterministic apart from loss. Harness values
+are candidates; each slice is confirmed with a Unity lap before it is
+rated.
 
 \begin{figure}[t]
   \centering
@@ -120,20 +117,19 @@ use \gls{ldp} \gof{}=4: confirm Slice~A (\gls{ra} 32) and block E
 
 \begin{table}[t]
   \caption{Impairment slices. All slices share the same origin,
-  renderer and casting stage; B--D hold the encoder fixed. Values for
+  renderer, casting stage and encoder (\gls{ldp} \gof{}=4). Values for
   B--D are harness candidates \todo{pending Unity confirmation}.}
   \label{tab:impairments}
   \centering
   \small
-  \begin{tabular}{@{}lllllll@{}}
+  \begin{tabular}{@{}lllll@{}}
     \toprule
-    Slice & Port & Loss $p$ & Delay $\ell$ & Encoder & Role & Rated by \\
+    Slice & Port & Loss $P$ & Delay $d$ & Role \\
     \midrule
-    A & 5001 & 0\%         & \SI{0}{\milli\second}        & \glsentryshort{ra}, \gof{}=32  & reference; $\qc$, $S_k$ & all \\
-    B & 5002 & 1.25\%      & \SI{0}{\milli\second}        & \glsentryshort{ldp}, \gof{}=4  & loss only & all \\
-    C & 443  & 0\%         & \SI{55}{\milli\second}       & \glsentryshort{ldp}, \gof{}=4  & latency only & all \\
-    D & 5003 & 0.02\%      & \SI{9}{\milli\second}        & \glsentryshort{ldp}, \gof{}=4  & combined & all \\
-    E & 5003 & \todo{$p$}  & \todo{$\ell$}                & \glsentryshort{ldp}, \gof{}=16 & \gof contrast & \todo{subset} \\
+    A & 5001 & 0\%    & \SI{0}{\milli\second}  & clean reference; $\qc$, $\tau_{\mathrm{dl}}$, $N_p$ \\
+    B & 5002 & 1.25\% & \SI{0}{\milli\second}  & loss only, graded \\
+    C & 443  & 0\%    & \SI{55}{\milli\second} & delay only, graded \\
+    D & 5003 & 0.02\% & \SI{9}{\milli\second}  & interaction: each level null alone \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -141,7 +137,7 @@ use \gls{ldp} \gof{}=4: confirm Slice~A (\gls{ra} 32) and block E
 \subsection{Subjective Experiment}
 \label{sec:method}
 
-\paragraph{Protocol.}
+\subsubsection{Protocol}
 The study follows ITU-T P.910~\cite{p910} with the \gls{acr} method on
 the five-point scale (5~Excellent to 1~Bad); a single-stimulus method
 matches how a viewer consumes a stream and needs no reference
@@ -159,15 +155,15 @@ exploration without inducing fatigue~\cite{mosaic2026}. A session
 opens with a training phase of about \SI{60}{\second} that shows the
 three sequences on Slice~A so that the top of the scale is anchored
 to the clean presentation, followed by the rated trials: three
-sequences $\times$ four slices (A--D) for every participant, plus
-block E, in a Latin-square order balanced across participants
+sequences $\times$ four slices (A--D) for every participant, twelve
+trials, in a Latin-square order balanced across participants
 so that no slice systematically follows another; this addresses the
 fixed presentation order of~\cite{mosaic2026}. Ratings are given
 verbally after each trial and entered by the experimenter, keeping
 the participant's hands free and the headset on. A session lasts
 about \SI{30}{\minute} including briefing and fitting.
 
-\paragraph{Participants and screening.}
+\subsubsection{Participants and screening}
 \todo{$N = 50$ participants (age range, gender split, prior \gls{vr}
 experience), recruited from \anon[the institution]{UNICAMP} and
 screened for normal or corrected-to-normal vision and absence of
@@ -179,7 +175,7 @@ ratings deviate from the per-condition mean by more than the
 prescribed bound in more than a quarter of conditions is excluded
 before analysis.
 
-\paragraph{Ethics.}
+\subsubsection{Ethics}
 The protocol was approved by the institutional research ethics
 committee through the national platform
 (\anon[protocol number withheld for review]{Plataforma Brasil, CAAE
@@ -191,45 +187,44 @@ research involving human participants.
 \subsection{Data Processing and Statistical Analysis}
 \label{sec:design-analysis}
 
-\paragraph{Opinion scores.}
+\subsubsection{Opinion scores}
 For each condition (sequence $\times$ slice) we report the mean
 opinion score with a bootstrap 95\% \gls{ci} (10,000 resamples over
-participants). Because \gls{acr} ratings are ordinal and the
-per-condition distributions are not assumed normal, inference is
-carried out with a \gls{clmm}: the rating is the ordinal response,
-loss (present/absent) and latency (present/absent) are fixed effects
-together with their interaction, and participant and sequence are
-random intercepts. The two single-factor predictions of
-Section~\ref{sec:model-predictions} correspond to the main effects;
-the super-additivity prediction corresponds to a positive
-loss$\times$latency interaction on the latent scale, and we also
-report it on the \mos scale as the contrast
-$(\mos_A - \mos_D) - (\mos_A - \mos_B) - (\mos_A - \mos_C)$ with its
-bootstrap \gls{ci}. The delivery-unit prediction is the contrast
-between blocks D and E at matched impairment.
+participants). Because \gls{acr} ratings are ordinal, inference uses a
+\gls{clmm} with the rating as ordinal response and participant and
+sequence as random intercepts. A first model with slice as a fixed
+effect establishes that B, C and D each differ from A. The test of
+Claim~1 is a second model with the session's measured $\tlf$ (and
+$\phi$) as covariates: if ratings depend on the network only through
+presentation timing, adding slice identity to this model yields no
+significant improvement (likelihood-ratio test), and sessions with
+$\tlf \approx 0$ on impaired slices are not distinguishable from
+Slice~A. The freeze extension of Section~\ref{sec:model-layer2} is
+the test $\alpha_\phi = 0$ in the same framework.
 
-\paragraph{Transport telemetry and $\tlf$.}
-Every rated trial is aligned with the renderer's per-unit log for the
-same session, from which the measured temporal loss fraction
-$\tlf_{\mathrm{meas}}$ is computed as one minus the ratio of frames
-rendered on schedule to frames due, Eq.~\eqref{eq:tlf}. The clean
-slice supplies the per-unit slack $S_k$, the base round trip $\rho$
-and the goodput $C$; the Layer~1 prediction $\tlf_{\mathrm{pred}}$ is
-evaluated from Eqs.~\eqref{eq:recovery}--\eqref{eq:tlf} with the
-slice's $(p, \ell)$ and the unit sizes $B_k$ of the bitstream, taking
-the expectation over the loss count. Layer~1 is assessed by comparing
-$\tlf_{\mathrm{pred}}$ with $\tlf_{\mathrm{meas}}$ per condition.
+\subsubsection{Transport telemetry}
+Every rated trial is aligned with the client's per-unit log and
+session counters for the same session, from which $\tlf$ and $\phi$
+are computed as in Eq.~\eqref{eq:tlf}. Slice~A supplies
+$\tau_{\mathrm{dl}}$ and $N_p$ per sequence, the server logs supply
+$r_0$ and $\kappa$ of Eq.~\eqref{eq:recovery}, and the client log
+supplies $f$ and $H$. The four Layer~1 predictions of
+Table~\ref{tab:predictions} are then checked against the logs: the
+pure-delay threshold against the delay scan, $p_{\mathrm{slow}}$
+against the logged slow-unit fraction per session, the Monte Carlo
+$\tlf$ and its spread against the logged $\tlf$ per session, and the
+regime boundary against the sessions that collapsed.
 
-\paragraph{Model fitting and held-out evaluation.}
+\subsubsection{Model fitting and held-out evaluation}
 Layer~2 is fitted on \emph{measured} $\tlf$: with $\qc$ fixed by
 Eq.~\eqref{eq:ceiling} from Slice~A, $\alpha$ is estimated by
-non-linear least squares of Eq.~\eqref{eq:crystal} to the
-per-condition \mos, and its 95\% \gls{ci} is obtained by bootstrap
-over participants. Generalisation is tested by leave-one-out: $\alpha$
-is refitted with one slice (or one sequence) withheld and the withheld
+non-linear least squares of Eq.~\eqref{eq:crystal} to the per-session
+ratings, and its 95\% \gls{ci} is obtained by bootstrap over
+participants. Generalization is tested by leave-one-out: $\alpha$ is
+refitted with one slice (or one sequence) withheld and the withheld
 condition is predicted without refitting; we report \gls{plcc},
-\gls{srocc} and \gls{rmse} on the withheld conditions, pooled. The same
-protocol is applied to the five-coefficient regression of
-Eq.~\eqref{eq:udora}, refitted on our ratings per sequence, so that
-the comparison with the prior model is at equal data and equal
-held-out protocol rather than against published figures.
+\gls{srocc} and \gls{rmse} on the withheld conditions, pooled. The
+same protocol is applied to the regression of Eq.~\eqref{eq:udora},
+refitted on our ratings per sequence, and to a separable model in
+$(d, P)$, so that the comparison with prior forms is at equal data and
+equal held-out protocol rather than against published figures.

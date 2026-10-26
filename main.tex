@@ -78,7 +78,7 @@
 \newcommand{\fiveg}{\gls{5g}\xspace}
 \newcommand{\threedgs}{\gls{3dgs}\xspace}
 \newcommand{\plr}{\mathrm{PLR}}
-\newcommand{\tlf}{\psi}                      % temporal loss fraction
+\newcommand{\tlf}{\psi}                      % skip fraction
 \newcommand{\qc}{\widetilde{Q}_c}            % per-content clean ceiling
 % Math-safe short forms (glossaries inside math is fragile)
 \newcommand{\mosm}{\mathrm{MOS}}
@@ -87,9 +87,9 @@
 % Layer 2 (perceptual): one free parameter alpha, per-content ceiling Qc
 \newcommand{\crystalmodel}{%
   \widehat{\mosm} = 1 + 4\,\qc\, e^{-\alpha \tlf}}
-% Layer 1 (transport): temporal loss fraction from playback rate
+% Layer 1 (transport): skip fraction from session counters
 \newcommand{\crystallayerone}{%
-  \tlf = 1 - \frac{T_{\mathrm{rendered}}}{T_{\mathrm{wallclock}}}}
+  \tlf = \frac{\text{units skipped} + \text{units jumped over}}{\text{units due}}}
 
 % Editorial helpers (remove before submission)
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
@@ -142,23 +142,32 @@
 %% Abstract (structured: problem, gap, approach, result, claim)
 %% ------------------------------------------------------------------
 \begin{abstract}
-\todo{Problem: volumetric video over private \fiveg to untethered
-\glspl{hmd}; production \quic is reliable, so loss never reaches the decoder
--- it reaches the clock.}
-\todo{Gap: existing network-aware QoE models for volumetric media
-(Udora et al.) fit five coefficients per quality level on reliable
-transport and generalise poorly (held-out PLCC 0.57--0.66); no model
-explains \emph{why} delay and loss degrade QoE.}
-\todo{Approach: \crystal, a two-layer model. Layer~1 derives the temporal
-loss fraction $\tlf$ from transport parameters (slack, RTT, recovery
-cost, \gof structure) with no perceptual free parameter; Layer~2 maps
-$\tlf$ to MOS with one parameter, $\crystalmodel$.}
-\todo{Result: ITU-T P.910 ACR study ($N=50$), $2\times2$ factorial over
-loss and latency; separability refuted ($1.61\times$ interaction);
-\gof size, not codec identity, governs resilience; single $\alpha$
-predicts held-out conditions.}
-\todo{Claim: under reliable transport, latency and loss act exclusively
-through $\tlf$, mediated by the codec's delivery-unit structure.}
+Volumetric video for virtual reality is delivered to the edge over the
+\quic that production stacks ship, which is fully reliable: a lost
+packet never corrupts the decoded point cloud, it delays it. Under
+\gls{mpeg} \vpcc, whose bitstream is organized in groups of frames
+that must arrive in full before a presentation deadline, delay and
+loss therefore reach the viewer only as freezes and skips. Existing
+network-aware \qoe models for volumetric media fit delay and loss
+directly, with coefficients re-estimated per quality level, and
+generalize poorly. We present \crystal, a two-layer model in which the
+transport layer has no perceptual parameter and the perceptual layer
+has one. Layer~1 explains how delay and loss turn into skipped
+delivery units through a per-unit budget, a slack that delay shrinks
+and each loss spends, and a decoder buffer that drains when slow
+units run in sequence; it predicts the pure-delay threshold without
+a fitted parameter and shows that delay and loss cannot act
+separably. Layer~2 maps the measured skip fraction $\tlf$ to opinion
+score as $\crystalmodel$, with the ceiling $\qc$ read from the clean
+condition. We also document the end-to-end pipeline on which the
+model is tested, extending our conference paper: a shim that makes
+reference \vpcc encoding tractable, a native \gls{http3} client and
+deadline scheduler feeding the 5G-MAG decoder, a direct OpenVR
+presentation path, a 5G-capable Meta Quest~3, and an impairment chain
+cleared of six transport confounds. An ITU-T P.910 study
+($N=50$) over four impairment slices at a fixed encoder tests whether
+ratings depend on the network only through presentation timing.
+\todo{Results.}
 \end{abstract}
 
 %% ------------------------------------------------------------------
@@ -206,10 +215,10 @@ V-PCC, QUIC, HTTP/3, private 5G, subjective assessment, virtual reality}
 
 %% ------------------------------------------------------------------
 \begin{acks}
-\anon[Acknowledgements withheld for review.]{%
+\anon[Acknowledgments withheld for review.]{%
 This work was supported by the FAPESP Engineering Research Center
 SMARTNESS (Proc.\ 2021/00199-8). \todo{Add CAPES/CNPq/Ericsson
-acknowledgements as applicable.}
+acknowledgments as applicable.}
 }
 \end{acks}
 

@@ -2,9 +2,9 @@
 \label{sec:intro}
 
 Immersive applications increasingly define the trajectory from \fiveg
-to \gls{6g}~\cite{liberg2024,shen2023toward}: 3GPP and ITU-R list
-immersive and extended-reality services among the primary usage
-scenarios of these generations~\cite{3gpp22261,itur-m2160}, and mobile
+to \gls{6g}~\cite{shen2023toward}: 3GPP lists immersive and
+extended-reality services among the primary usage scenarios of these
+generations~\cite{3gpp22261}, and mobile
 video traffic is projected to more than double by
 2031~\cite{mobility25nov}. The most demanding of these services is
 immersive media streaming for \gls{vr}: volumetric content captured from
@@ -15,7 +15,7 @@ uncompressed~\cite{pcstreaming21}, and \gls{mpeg}'s
 \gls{vpcc}~\cite{v3c,vpccgraziosi} is the reference codec for dense,
 dynamic content. \vpcc codes geometry, attribute and occupancy atlases
 with \gls{hevc}~\cite{hevc} and inherits its temporal prediction
-structure: the bitstream is organised in \glspl{gof}, each of which must
+structure: the bitstream is organized in \glspl{gof}, each of which must
 be received in full before any of its frames can be decoded. Because
 standalone \glspl{hmd} cannot decode \vpcc in real time, deployments
 render at an edge server and cast the frames to the headset, so the
@@ -44,23 +44,26 @@ encoder or network.
 
 We present \crystal, a mechanistic two-layer \qoe model for \vpcc
 streaming over reliable \quic. Layer~1, which has no perceptual
-parameter, derives the \emph{temporal loss fraction} $\tlf$, the fraction
-of wall-clock time in which the renderer has no fresh \gof to show, from
-delivery slack, round-trip time, loss-recovery cost and \gof size.
-Layer~2 maps $\tlf$ to opinion score with one constant,
+parameter, explains how delay and loss turn into skipped delivery
+units, through a per-unit budget set by the \gof period, a slack that
+delay shrinks and each loss spends, and a decoder buffer that drains
+when slow units run in sequence; its observable is the \emph{skip
+fraction} $\tlf$, read from the client's session counters. Layer~2
+maps $\tlf$ to opinion score with one constant,
 \begin{equation}
   \crystalmodel,
   \label{eq:crystal-intro}
 \end{equation}
 where $\qc$ is the clean-reference ceiling of each content and $\alpha$
 is the only fitted parameter. The model claims that, under reliable
-transport, latency and loss act on \qoe only through $\tlf$. We test it on
-\mosaic~\cite{mosaic2026}, an end-to-end pipeline that streams \vpcc
-over \gls{http3} to an edge renderer colocated with a private \fiveg
-network and casts the rendered frames to a Meta Quest~3, with an ITU-T
-P.910 \gls{acr} study ($N=50$) whose $2\times2$ factorial design
-separates latency, loss and their interaction at a fixed encoder
-configuration. The contributions are:
+transport, latency and loss act on perceived smoothness only through
+presentation timing. We test it on \mosaic~\cite{mosaic2026}, an
+end-to-end pipeline that streams \vpcc over \gls{http3} to an edge
+renderer colocated with a private \fiveg network and casts the
+rendered frames to a Meta Quest~3, with an ITU-T P.910 \gls{acr} study
+($N=50$) over four slices at a fixed encoder configuration: a clean
+reference, loss only, delay only, and a combination of a delay and a
+loss level that are each harmless alone. The contributions are:
 \begin{itemize}[leftmargin=*,nosep]
   \item[--] \textbf{An end-to-end pipeline for \vpcc over reliable \quic
         to a \gls{vr} headset}, documented in full: an \gls{hm}-compatible
@@ -72,43 +75,43 @@ configuration. The contributions are:
         bypasses Unity's OpenXR path; a 5G-capable Meta Quest~3; and an
         impairment chain cleared of six transport confounds that each
         mimicked a property of \vpcc over \quic (Section~\ref{sec:system}).
-  \item[--] \textbf{An encoding campaign} that characterises the
-        rate--distortion behaviour of random-access and low-delay
+  \item[--] \textbf{An encoding campaign} that characterizes the
+        rate--distortion behavior of random-access and low-delay
         configurations for three \gls{mpeg} test sequences and selects
         bitrate-matched operating points (Section~\ref{sec:sys-content}).
   \item[--] \textbf{\crystal}, a mechanistic model whose transport layer
         is parameter-free and whose perceptual layer has one constant,
         replacing per-quality-level regression coefficients with a
         single explanatory variable, $\tlf$ (Section~\ref{sec:model}).
-  \item[--] \textbf{A pre-registered factorial study} showing that
-        latency and loss each degrade perceived smoothness and together
-        degrade it $1.61\times$ more than the sum of the two, refuting
-        the additivity of prior regressions; that \gof structure rather
-        than loss magnitude governs resilience, a larger low-delay \gof
-        being more robust than a smaller one; and that a single
-        $\alpha$ \todo{does / does not} predict held-out conditions
-        (Sections~\ref{sec:design} and~\ref{sec:results}), with
-        per-\gof transport logs aligned to every rating.
+  \item[--] \textbf{A subjective study designed to falsify the model},
+        with predictions stated before data collection: that ratings
+        from loss-, delay- and interaction-induced misses fall on one
+        curve in $\tlf$; that a delay and a loss level that are each
+        null alone produce a graded effect together, which no separable
+        model in delay and loss can reproduce; and that a single
+        $\alpha$ predicts held-out conditions
+        (Sections~\ref{sec:design} and~\ref{sec:results}). Every rating
+        is aligned with the per-\gof transport log of its session.
 \end{itemize}
 
 \blind{%
 This article extends the conference paper~\cite{mosaic2026}, which
 introduced the pipeline and a three-tier study ($N=20$) that paired
 impairment with encoder configuration. The article adds the full
-pipeline and encoding campaign, \crystal, a counterbalanced factorial
-study in place of the confounded tiers, and the link from per-\gof
-telemetry to ratings through $\tlf$. A second conference
-paper~\cite{vquest2026} characterised the transport signatures of
+pipeline and encoding campaign, \crystal, a counterbalanced four-slice
+study at a fixed encoder in place of the confounded tiers, and the
+link from per-\gof telemetry to ratings through $\tlf$. A second conference
+paper~\cite{vquest2026} characterized the transport signatures of
 latency and loss for a frame-independent codec; earlier testbed
 descriptions appeared as demonstrations~\cite{bestdemo25,nfvsdn24}.%
 }{%
 This article extends our conference paper~\cite{mosaic2026}, which
 introduced \mosaic and a three-tier study ($N=20$) that paired
 impairment with encoder configuration. The article adds the full
-pipeline and encoding campaign, \crystal, a counterbalanced factorial
-study in place of the confounded tiers, and the link from per-\gof
-telemetry to ratings through $\tlf$. \vquest~\cite{vquest2026}
-characterised the transport signatures of latency and loss for a
+pipeline and encoding campaign, \crystal, a counterbalanced four-slice
+study at a fixed encoder in place of the confounded tiers, and the
+link from per-\gof telemetry to ratings through $\tlf$. \vquest~\cite{vquest2026}
+characterized the transport signatures of latency and loss for a
 frame-independent codec; earlier testbed descriptions appeared as
 demonstrations~\cite{bestdemo25,nfvsdn24}.%
 }

@@ -1,93 +1,56 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Transport Characterisation}
+\subsection{Transport Characterization}
 \label{sec:res-transport}
-\todo{Loss-to-latency conversion under reliable \quic; \gof stall
-distributions per \gof size; measured $\tlf$ versus the Layer~1
-prediction.}
-
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.48\linewidth}
-    \centering
-    \begin{tikzpicture}
-      \begin{axis}[width=\linewidth,height=5cm,
-        xlabel={$\plr$ (\si{\percent})}, ylabel={\mos},
-        ymin=1, ymax=5, grid=major, legend pos=south west,
-        legend style={font=\scriptsize}]
-        \addplot+[mark=o] coordinates {(0,4.6)(0.5,4.4)(1,4.1)(2,3.6)(5,2.4)};
-        \addlegendentry{\gls{ldp} \gof{}=16}
-        \addplot+[mark=square] coordinates {(0,4.5)(0.5,4.0)(1,3.4)(2,2.6)(5,1.5)};
-        \addlegendentry{\gls{ldp} \gof{}=4}
-      \end{axis}
-    \end{tikzpicture}
-    \caption{Loss dimension \todo{placeholder data}}
-    \label{fig:mos-plr}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.48\linewidth}
-    \centering
-    \begin{tikzpicture}
-      \begin{axis}[width=\linewidth,height=5cm,
-        xlabel={$D$ (\si{\milli\second})}, ylabel={\mos},
-        ymin=1, ymax=5, grid=major, legend pos=south west,
-        legend style={font=\scriptsize}]
-        \addplot+[mark=o] coordinates {(0,4.6)(50,4.3)(100,3.9)(200,3.1)(400,2.0)};
-        \addlegendentry{\gls{ldp} \gof{}=16}
-        \addplot+[mark=square] coordinates {(0,4.5)(50,4.2)(100,3.8)(200,3.0)(400,1.9)};
-        \addlegendentry{\gls{ldp} \gof{}=4}
-      \end{axis}
-    \end{tikzpicture}
-    \caption{Latency dimension \todo{placeholder data}}
-    \label{fig:mos-delay}
-  \end{subfigure}
-  \caption{Subjective \mos versus network impairment, per \gof size,
-  with \crystal fits overlaid. \todo{replace placeholder data; add a
-  third panel of \mos versus measured $\tlf$ collapsing all conditions
-  onto one curve}}
-  \label{fig:mos-impairment}
-\end{figure}
+\todo{Layer~1 checks against logs (Table~\ref{tab:predictions}):
+pure-delay threshold versus the delay scan; $p_{\mathrm{slow}}$ of
+Eq.~\eqref{eq:pslow} versus the logged slow-unit fraction per session,
+with $r_0$ and $\kappa$ from the server logs; Monte Carlo $\tlf$ and
+its between-session spread versus the logged $\tlf$; the regime
+boundary versus the sessions that collapsed. Figure slot: measured
+versus predicted $p_{\mathrm{slow}}$ and $\tlf$ per slice and
+sequence.}
 
 \subsection{Analysis of Opinion Scores}
 \label{sec:res-mos}
-\todo{Per-slice and per-content \mos with \glspl{ci}; main effects from the \gls{clmm}.}
+\todo{Per-slice and per-sequence \mos with bootstrap \glspl{ci};
+\gls{clmm} with slice as fixed effect; B, C and D versus A. Figure
+slot: \mos per sequence and slice.}
 
-\subsection{Interaction of Latency and Loss}
-\label{sec:res-interaction}
-\todo{Single-factor drops ($A \to B$, $A \to C$) and the super-additive combined drop ($A \to D$); \gls{clmm} interaction term; the $1.61\times$ probe; contrast with the additive form of Eq.~\eqref{eq:udora}.}
-
-\subsection{Effect of Delivery-Unit Structure}
-\label{sec:res-gof}
-\todo{\gls{ldp} \gof{}=16 versus \gof{}=4 at matched impairment; measured $\tlf$ against the Layer~1 prediction.}
+\subsection{One Perceptual Channel}
+\label{sec:res-channel}
+\todo{Test of Claim~1: \mos versus measured $\tlf$ with all slices
+and sequences on one axis; \gls{clmm} with $\tlf$ (and $\phi$) as
+covariates and the likelihood-ratio test for slice identity; sessions
+with $\tlf \approx 0$ on impaired slices versus Slice~A; the freeze
+extension $\alpha_\phi = 0$. Figure slot: \mos versus $\tlf$ with the
+\crystal curve overlaid.}
 
 \subsection{Model Calibration and Held-out Prediction}
 \label{sec:res-calibration}
 \begin{table}[t]
-  \caption{Fitted \crystal parameters with 95\% bootstrap CIs. \todo{fill}}
+  \caption{Fitted \crystal parameters with 95\% bootstrap \glspl{ci}.
+  \todo{fill}}
   \label{tab:params}
   \centering
   \small
-  \begin{tabular}{@{}lS[table-format=1.3]S[table-format=1.3]S[table-format=1.3]S[table-format=1.3]@{}}
+  \begin{tabular}{@{}lllll@{}}
     \toprule
-    Quantity & {Estimate} & {CI low} & {CI high} & {Note} \\
+    Quantity & Estimate & CI low & CI high & Note \\
     \midrule
-    $\alpha$ (single, pooled)         & 0.000 & 0.000 & 0.000 & {} \\
-    $\qc$ Soldier                     & 0.000 & 0.000 & 0.000 & {from Slice A} \\
-    $\qc$ Longdress                   & 0.000 & 0.000 & 0.000 & {from Slice A} \\
-    $\qc$ ThaiDancer                  & 0.000 & 0.000 & 0.000 & {from Slice A} \\
-    \midrule
-    Held-out PLCC / SROCC / RMSE      & 0.000 & 0.000 & 0.000 & {vs.\ 0.57--0.66~\cite{udora2026tmm}} \\
+    $\alpha$ (single, pooled)         & & & & $\tlf_{1/2} = \ln 2/\alpha$ \\
+    $\alpha_\phi$ (freeze extension)  & & & & test of $\alpha_\phi = 0$ \\
+    $\qc$ Soldier / Longdress / ThaiDancer & & & & from Slice~A \\
+    Held-out \gls{plcc} / \gls{srocc} / \gls{rmse} & & & & vs.\ 0.57--0.66~\cite{udora2026tmm} \\
     \bottomrule
   \end{tabular}
 \end{table}
+\todo{$\alpha$ and its \gls{ci}; leave-one-slice-out and
+leave-one-sequence-out prediction; Table~\ref{tab:params}.}
 
 \subsection{Comparison with Prior Models}
 \label{sec:res-comparison}
-\todo{Held-out \gls{plcc}/\gls{srocc}/\gls{rmse} of \crystal against a re-fit of Eq.~\eqref{eq:udora} on the same ratings; parameter count versus accuracy.}
-
-\subsection{Operating Envelopes}
-\label{sec:res-envelopes}
-\todo{Operator-facing: iso-\mos contours in the (delay, loss) plane
-per \gof size, read off Layer~1; keep brief, the full dimensioning
-treatment is deferred.}
+\todo{Held-out \gls{plcc}/\gls{srocc}/\gls{rmse} of \crystal against a
+re-fit of Eq.~\eqref{eq:udora} and a separable model in $(d, P)$ on
+the same ratings; parameter count versus accuracy.}

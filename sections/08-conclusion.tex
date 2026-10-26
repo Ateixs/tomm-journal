@@ -1,6 +1,15 @@
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
-\todo{Restate the falsifiable claim and its support. Future work:
-\gls{ldp} \gof{}=16 block and adaptive-profile (\gls{ra} \gof{}=32) evaluation;
-\threedgs test of the no-coupling prediction; live 5G impairment rather
-than emulation.}
+\todo{Restate Claim~1 and its support; the pipeline as a reusable
+instrument.} Two predictions of Layer~1 remain untested here. The
+budget $B_{\mathrm{eff}}$ and the slack $S$ grow with the \gof size
+$G$ while the per-loss cost $r(d)$ does not, so a longer low-delay
+\gof should absorb more losses per unit and be more resilient at
+matched impairment than a shorter one, against the intuition that
+shorter units limit damage; the three-tier study pointed the same
+way~\cite{mosaic2026}, and a rated \gls{ldp} \gof{}=16 block at the
+levels of Table~\ref{tab:impairments} would test it. And a
+representation without delivery-unit coupling, such as per-frame
+point clouds or Gaussian splats, should show no interaction between
+delay and loss. \todo{Live radio impairment rather than emulation;
+adaptive-profile (\gls{ra} \gof{}=32) evaluation.}

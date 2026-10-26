@@ -19,7 +19,7 @@ is identical across conditions.
   \includegraphics[width=\textwidth]{contrib/fig1_overview.pdf}
   \caption{The pipeline with the provenance of every component. Blue
   boxes are new, the dashed box is an upstream component we patched,
-  grey boxes are used unmodified. Badges mark where measurements are
+  gray boxes are used unmodified. Badges mark where measurements are
   taken.}
   \Description{Block diagram in four lanes. Content preparation: 8iVFB
   sequences, TMC2, an HMAPP shim to ffmpeg and libx265 next to HM for
@@ -34,7 +34,7 @@ is identical across conditions.
 \subsection{Content Preparation}
 \label{sec:sys-content}
 
-\paragraph{Source content.}
+\subsubsection{Source content}
 Three sequences of the 8i Voxelized Full Bodies dataset~\cite{8i},
 Category~2 of the \vpcc common test conditions~\cite{vpccctc}, are used
 (Figure~\ref{fig:content}): Soldier and Longdress at 10-bit voxel
@@ -58,7 +58,7 @@ frames at \SI{30}{fps}.
   \label{fig:content}
 \end{figure}
 
-\paragraph{Encoder back end.}
+\subsubsection{Encoder back end}
 Content is encoded with \gls{tmc2} v25.0~\cite{tmc2} built with its
 external-codec path. In this mode \gls{tmc2} links no video encoder:
 for each of the three 2D sub-streams (occupancy, geometry, attribute)
@@ -79,28 +79,28 @@ the result back to YUV where \gls{tmc2} expects the \gls{hm}
 reconstruction. \gls{tmc2} is unmodified and cannot tell that the
 encoder was replaced. The occupancy map stays on \gls{hm}: it is coded
 losslessly, is small, and benefits more from bit-exact reference
-behaviour than from speed. One profile then encodes in
+behavior than from speed. One profile then encodes in
 \SIrange{25}{30}{\minute} for a vox10 sequence and
 \SIrange{110}{120}{\minute} for ThaiDancer on a single workstation, and
 because FFmpeg and libx265 are the versions packaged with Ubuntu~24.04
 LTS, a clean installation reproduces the encoder exactly.
 
-\paragraph{Fixed atlas size.}
-The synthesiser of the decoder (Section~\ref{sec:sys-edge}) does not
+\subsubsection{Fixed atlas size}
+The synthesizer of the decoder (Section~\ref{sec:sys-edge}) does not
 support a change of atlas size within a session: when a \gof arrives
-with different dimensions, the synthesisers are released about
+with different dimensions, the synthesizers are released about
 \SI{26}{\milli\second} after the second canvas reconfiguration and never
-reinitialise, so only the first \gof renders and the frame freezes
+reinitialize, so only the first \gof renders and the frame freezes
 without an error. Unconstrained, \gls{tmc2} sizes the vox10 atlases per
-\gof between 1280$\times$1280 and 1280$\times$1536. The atlas is
-therefore fixed at encoding time with \texttt{--minimumImageWidth} and
+\gof between 1280$\times$1280 and 1280$\times$1536. We therefore fix the
+atlas at encoding time with \texttt{--minimumImageWidth} and
 \texttt{--minimumImageHeight}: 1280$\times$1536 for both vox10
 sequences (1280$\times$1600 for the Longdress \gls{ra} encode) and
 2560$\times$4096 for ThaiDancer. The padding costs some bitrate, which
 is included in the curves of Figure~\ref{fig:rd}.
 
-\paragraph{Encoding campaign.}
-Each sequence is encoded in three configurations that differ in
+\subsubsection{Encoding campaign}
+We encode each sequence in three configurations that differ in
 prediction structure and \gof length: \gls{ra} with hierarchical B
 frames and a \gof of 32, as prescribed by the \vpcc common test
 conditions~\cite{vpccctc}, and \gls{ldp} with I and P frames
@@ -114,9 +114,11 @@ on or just above the \gls{ldp} curves, so short \gls{ldp} \gofs trade
 coding efficiency for resilience to delay rather than for fidelity. The
 selected attribute QPs (Table~\ref{tab:encoder}) give a
 \gls{psnr}$_Y$ of 34--\SI{39}{dB} and bring the three sequences into a
-comparable bitrate range; at \gls{ldp} \gof{}=4 the encoded bitrates
-are 38.8, 41.1 and \SI{38.2}{Mb/s} for Soldier, Longdress and
-ThaiDancer. Attribute data dominate the bitstream (for Longdress about
+comparable bitrate range. All rated conditions of this study use the
+\gls{ldp} \gof{}=4 encodes, whose bitrates are 38.8, 41.1 and
+\SI{38.2}{Mb/s} for Soldier, Longdress and ThaiDancer; the \gls{ra} and
+\gls{ldp} \gof{}=16 encodes served the three-tier study and the
+rate--distortion characterization. Attribute data dominate the bitstream (for Longdress about
 92\% of the size, geometry 6\%, occupancy 1\%). \pcqm~\cite{pcqm} is
 computed per sequence as a stimulus descriptor only
 (Section~\ref{sec:model-scope}).
@@ -136,7 +138,7 @@ computed per sequence as a stimulus descriptor only
   \begin{minipage}[b]{0.45\linewidth}
     \centering
     \small
-    \captionof{table}{\vpcc encoder configuration.}
+    \setlength{\tabcolsep}{3pt}\captionof{table}{\vpcc encoder configuration.}
     \label{tab:encoder}
     \begin{tabular}{@{}ll@{}}
       \toprule
@@ -144,20 +146,20 @@ computed per sequence as a stimulus descriptor only
       \midrule
       Codec & TMC2 v25.0 \\
       Geometry, attribute & libx265 3.5 via shim \\
-      Occupancy (lossless) & HM 16.20+SCM 8.8 \\
+      Occupancy (lossless) & HM 16.20 \\
       Geometry QP / occ.\ prec. & 16 / 2 \\
       Attribute QP (S/L/T) & 18 / 22 / 32 \\
-      \glsentryshort{ra} & \gof{}=32, 10 units \\
-      \glsentryshort{ldp} & \gof{}=16, 19 units \\
-      \glsentryshort{ldp} & \gof{}=4, 75 units \\
+      \glsentryshort{ldp} (rated) & \gof{}=4, I/P, 75 units \\
+      \glsentryshort{ldp} & \gof{}=16, I/P, 19 units \\
+      \glsentryshort{ra} & \gof{}=32, I/P/B, 10 units \\
       \bottomrule
     \end{tabular}
   \end{minipage}
 \end{figure}
 
-\paragraph{Segmentation.}
-The VpccChunkCreator tool of the 5G-MAG \textsc{rt-v3c}
-suite~\cite{fivegmag} splits each bitstream at \gof boundaries into one
+\subsubsection{Segmentation}
+We split each bitstream with the VpccChunkCreator tool of the 5G-MAG
+\textsc{rt-v3c} suite~\cite{fivegmag} at \gof boundaries into one
 file per \gof: 75 segments of \SI{133.3}{\milli\second} at \gof{}=4
 (about 620--\SI{680}{kB} at the median), 19 of \SI{533}{\milli\second}
 at \gof{}=16 and 10 of \SI{1067}{\milli\second} at \gof{}=32. Each
@@ -168,17 +170,17 @@ presents a \gof completely or not at all.
 \subsection{Volumetric Origin and Stage-1 Impairment}
 \label{sec:sys-stage1}
 
-\paragraph{Origin server.}
+\subsubsection{Origin server}
 ISO/IEC 23090-10 carries \vpcc as time-bounded HTTP
-objects~\cite{v3ccarriage}; the pipeline keeps this object model and
-fetches each \gof over \gls{http3}, which avoids the cross-object
+objects~\cite{v3ccarriage}; we keep this object model and
+fetch each \gof over \gls{http3}, which avoids the cross-object
 head-of-line blocking of \gls{tcp} and is the transport a deployed
 service would most plausibly use (40.9\% of public web sites advertised
-\gls{http3} in October 2026~\cite{w3techs2026}). The segments are served
-as static files by Caddy~2.11.1 on an Ubuntu~24.04 virtual machine,
+\gls{http3} in October 2026~\cite{w3techs2026}). We serve the segments as
+static files with Caddy~2.11.1 on an Ubuntu~24.04 virtual machine,
 over \gls{http3} with \gls{tls}~1.3. Its \quic stack, quic-go~0.59, uses
 a NewReno-style congestion controller with a multiplicative decrease of
-0.7 and an initial window of 32 packets. One Caddy instance listens on
+0.7 and an initial window of 32 packets. We run one Caddy instance that listens on
 one \gls{udp} port per slice, so all slices share the origin, content
 and \gls{tls} configuration and differ only in the impairment of their
 port. The client issues one GET per \gof; Caddy writes each body in
@@ -187,20 +189,20 @@ port. The client issues one GET per \gof; Caddy writes each body in
 and 471 packets at the median for Soldier, Longdress and ThaiDancer and
 is sent in about 35--\SI{39}{\milli\second} on the clean slice.
 
-\paragraph{Impairment chain.}
-Impairment acts on the egress of the server interface (MTU
+\subsubsection{Impairment chain}
+We apply impairment on the egress of the server interface (MTU
 \SI{1450}{B}), so only the server-to-renderer direction is impaired;
-requests and acknowledgements travel unimpaired. An HTB root classifies
+requests and acknowledgments travel unimpaired. An HTB root classifies
 packets by \gls{udp} source port into one class per slice (5001 clean,
 A; 5002 loss only, B; 443 delay only, C; 5003 delay and loss, D), and
 each impaired class chains a token bucket filter and a \texttt{netem}
 queue that applies the slice's loss probability $p$, its one-way delay
 $\ell$, or both. Delay is constant and without jitter, so
-\texttt{netem} does not reorder packets. One script holds all four
-chains and resets their counters, and after every measurement lap the
-\texttt{netem} drop counters are compared with the configured loss.
+\texttt{netem} does not reorder packets. One script holds all four chains and resets their counters, and after
+every measurement lap we compare the \texttt{netem} drop counters with
+the configured loss.
 
-\paragraph{Transport confounds.}
+\subsubsection{Transport confounds}
 Before calibration we found and removed six effects that produced loss
 or delay that had not been configured (Table~\ref{tab:confounds}).
 Each of them, on its own, created a loss cliff that looked like a
@@ -255,14 +257,14 @@ C are path-MTU probes, and the losses on slices B and D match the
   \end{tabularx}
 \end{table*}
 
-\paragraph{Server-side measurement.}
+\subsubsection{Server-side measurement}
 During calibration laps quic-go writes one qlog trace per connection
 and \texttt{tcpdump} records every datagram after the queueing
 disciplines. Because \quic encrypts its stream framing, neither source
 alone attributes a datagram to a \gof; matching qlog sent-packet events
 to captured datagrams by order and size pairs 99.997\% of the packets,
 and the joined trace gives, per \gof, the request time, first and last
-transmission, the acknowledgement time of every packet, the packet
+transmission, the acknowledgment time of every packet, the packet
 count, the retransmitted bytes and the congestion window. qlog is
 disabled during participant sessions.
 
@@ -277,11 +279,12 @@ shapes the renderer: transport, decoder input and \gls{vr} output were
 each rebuilt around a decoder that only speaks OpenGL, in the four
 components below.
 
-\paragraph{Native HTTP/3 client.}
-A first client started one \texttt{curl} process (ngtcp2) per \gof, so
-every \gof paid a new process, handshake and slow start, a late
+\subsubsection{Native HTTP/3 client}
+\label{sec:sys-client}
+Our first client started one \texttt{curl} process (ngtcp2) per \gof,
+so every \gof paid a new process, handshake and slow start, a late
 download could not be aborted, and the client had no view of the
-transport state. It is replaced by a native plugin built on lsquic
+transport state. We replaced it with a native plugin built on lsquic
 with BoringSSL linked statically, exposed to Unity through a C
 interface of ten functions and a C\# binding (Online Appendix,
 Figure~\ref{fig:contrib-plugin}). The plugin opens one \quic connection
@@ -303,7 +306,8 @@ performed alike, so the plugin's advantage lies in concurrency,
 session-wide congestion state and cancellation, not single-stream
 speed.
 
-\paragraph{Deadline scheduler.}
+\subsubsection{Deadline scheduler}
+\label{sec:sys-scheduler}
 The scheduler enforces real-time playout on a content clock
 (Figure~\ref{fig:contrib-scheduler}). With $D = \SI{133.3}{\milli\second}$
 the duration of a \gof{}=4 segment and $T_a$ the time of the first
@@ -318,7 +322,7 @@ input holds two or more \gofs, classifies the \gof by its lag behind
 $E_n$, and issues the next request. A lag of at most
 \SI{33}{\milli\second} is on time, a lag up to \SI{133}{\milli\second}
 is late but still pushed, and a larger lag is a loss; an aborted
-request is cancelled and the scheduler skips ahead to the \gof whose
+request is canceled and the scheduler skips ahead to the \gof whose
 slot contains the current content time. Before a push, an integrity
 check walks the \gls{v3c} units of the body, because a plausibly sized
 but malformed \gof would crash the decoder's bitstream reader.
@@ -328,7 +332,7 @@ hides the network: with four \gofs in flight the pusher ran about
 \SI{600}{\milli\second} ahead of the content clock, and on slice D the
 same graded effect needed 0.15\% loss instead of 0.02\%. With one
 request in flight the delivery time of each \gof maps directly onto its
-deadline. Timestamps are quantised to the Unity frame, capped at
+deadline. Timestamps are quantized to the Unity frame, capped at
 \SI{30.3}{\milli\second}; since the loop spends one frame per \gof, a
 fetch must finish within about three frames (\SI{90}{\milli\second}) of
 the \SI{133}{\milli\second} slot to be on time. The scheduler logs one
@@ -349,35 +353,36 @@ counts of on-time, late, lost and skipped \gofs.
   \label{fig:contrib-scheduler}
 \end{figure}
 
-\paragraph{Decoder input and teardown.}
+\subsubsection{Decoder input and teardown}
+\label{sec:sys-decoder}
 The decoder plugin of the 5G-MAG \gls{v3c} platform~\cite{fivegmag}, an
-optimised \gls{tmc2} v25.0 decoder, receives segments only through a
+optimized \gls{tmc2} v25.0 decoder, receives segments only through a
 \gls{dash} client in a separate DLL, called through seven
 \texttt{dashc\_*} functions; its file-based alternative loads every
-segment at start-up. A replacement DLL with the same name and exports
-is loaded unchanged by the decoder and holds a bounded, thread-safe
-FIFO: Unity pushes one complete \gof per call, and the decoder thread
+segment at start-up. We wrote a replacement DLL with the same name and exports, which the
+decoder loads unchanged; it holds a bounded, thread-safe FIFO: Unity pushes one complete \gof per call, and the decoder thread
 blocks in \texttt{dashc\_getChunk} until one is available (Online
 Appendix, Figure~\ref{fig:contrib-decoder}). The DLL exports the queue
 depth, used by the scheduler's gate, and \gofs reach the decoder from
-memory. The decoder itself is modified in one place. When a session
+memory. We modified the decoder itself in one place. When a session
 ended after starved delivery, Unity froze on teardown: the join in
 \texttt{stopVideoDecoders()} waited for video threads parked on an
-empty input that never observed the finish flag. The fix pushes an
+empty input that never observed the finish flag. Our fix pushes an
 empty packet per video stream before the join, as the audio path of
 the same file already does (four lines). An unmodified rebuild
 reproduced the freeze; the patched build passed ten sessions in one
-process, five of them starved, without a hang. The fix was reported
-upstream. The decoder is restarted between conditions, which also
+process, five of them starved, without a hang. We reported the fix
+upstream. We restart the decoder between conditions, which also
 permits sequences with different atlas sizes in one session and a fully
-randomised presentation order.
+randomized presentation order.
 
-\paragraph{Direct OpenVR submission.}
+\subsubsection{Direct OpenVR submission}
+\label{sec:sys-gldx}
 In OpenGLCore, Unity's XR plug-in submits OpenGL swapchain images
 through OpenXR; the SteamVR runtime expects Direct3D~11 textures from
 this application, rejects the OpenGL images without an error, and the
-headset shows nothing. Since the decoder rules out Direct3D, every XR
-loader is disabled and a native plugin delivers the frames to OpenVR
+headset shows nothing. Since the decoder rules out Direct3D, we disabled every XR
+loader and wrote a native plugin that delivers the frames to OpenVR
 directly (Online Appendix, Figure~\ref{fig:contrib-gldx}). It creates a
 Direct3D~11 device and one shared texture per eye
 (1832$\times$1920), registers each as an OpenGL texture through
@@ -399,7 +404,7 @@ encodes them as video for the ALVR client on the Meta~Quest~3; head
 tracking returns over the same link. The link is a private \fiveg
 standalone network (radio unit, baseband unit, network controller)
 with the edge renderer colocated with the gNodeB. The Quest~3 has no
-cellular modem, so a commercial 5G USB dongle is attached to its USB-C
+cellular modem, so we attach a commercial 5G USB dongle to its USB-C
 port and the headset uses the dongle's interface, never Wi-Fi.
 Stage~2 carries rendered frames, not \vpcc content, and is held
 constant with identical ALVR settings. It belongs to the
@@ -415,11 +420,11 @@ transport.
 Each condition is observed from three vantage points: the server qlog
 and capture joined per \gof, the client's per-\gof and per-session logs
 with the plugin's transport counters, and the participants' ratings.
-Because the Unity Editor needs an operator to start every lap, broad
-transport scans use a headless harness: a console application that
+Because the Unity Editor needs an operator to start every lap, we
+built a headless harness for broad transport scans: a console application that
 loads the same plugin DLL (its hash is recorded in every log) and
 replays the scheduler, with a virtual decoder that consumes one \gof
-every $D$ as the only synthetic element and an option that quantises
+every $D$ as the only synthetic element and an option that quantizes
 polling to the Unity frame. It writes the same log formats as Unity.
 Against a Unity lap recorded on the same day with the same impairment,
 its counts of missed slots fell within $\pm$10\% of the 230 slots of a
