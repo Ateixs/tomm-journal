@@ -138,7 +138,7 @@ computed per sequence as a stimulus descriptor only
   \begin{minipage}[b]{0.45\linewidth}
     \centering
     \small
-    \setlength{\tabcolsep}{3pt}\captionof{table}{\vpcc encoder configuration.}
+    \footnotesize\setlength{\tabcolsep}{3pt}\captionof{table}{\vpcc encoder configuration.}
     \label{tab:encoder}
     \begin{tabular}{@{}ll@{}}
       \toprule
@@ -330,7 +330,8 @@ but malformed \gof would crash the decoder's bitstream reader.
 The campaign client keeps one request in flight. A deeper prefetch
 hides the network: with four \gofs in flight the pusher ran about
 \SI{600}{\milli\second} ahead of the content clock, and on slice D the
-same graded effect needed 0.15\% loss instead of 0.02\%. With one
+same graded effect needed several times the loss of
+Table~\ref{tab:impairments}. With one
 request in flight the delivery time of each \gof maps directly onto its
 deadline. Timestamps are quantized to the Unity frame, capped at
 \SI{30.3}{\milli\second}; since the loop spends one frame per \gof, a

@@ -78,58 +78,89 @@ collapsed combined slice. \todo{Confirm from the campaign scene that
 the content path of all twelve conditions (three sequences $\times$
 A--D) is the \texttt{\_LD\_gof4\_} encode, Slice~A included.}
 
-\subsubsection{Calibration}
+\subsubsection{Slice operating points}
 \label{sec:calibration}
-The impairment levels are located with the headless harness and the
-server capture of Section~\ref{sec:sys-measurement}, which scanned 29
-impairment levels in 129 sessions (Figure~\ref{fig:transport-map}).
-Loss alone at the LAN round-trip time produces graded misses at
-1--1.25\% and collapse from 1.75\%; delay alone produces graded misses
-at 50--\SI{55}{\milli\second} one way and collapse from
-\SI{60}{\milli\second}, as Eq.~\eqref{eq:slack} predicts. With
-\SI{9}{\milli\second} of added delay, a loss of 0.02\% is already
-graded and 0.05\% collapses: the same graded effect needs 60 times
-less loss once \SI{9}{\milli\second} of delay is present, although
-\SI{9}{\milli\second} alone and 0.02\% alone are both null. All three
-ladders break at the same point: a level survives while the median
-fetch takes three Unity frames (\SI{90}{\milli\second},
-Eq.~\eqref{eq:budget}) and collapses at four. Longdress, which needs
-the most packets per \gof, is the least tolerant sequence under loss.
-Loss is random (Bernoulli) and delay constant without jitter, so the
-slack a unit consumes is deterministic apart from loss. Harness values
-are candidates; each slice is confirmed with a Unity lap before it is
-rated.
+Each impaired slice is a single operating point on the
+server-to-renderer path, applied with \texttt{netem} on the server's
+egress. The values were chosen by calibration rather than taken from
+a standard. First, the headless transport harness of
+Section~\ref{sec:sys-measurement} mapped the null, graded and
+collapse regions of each impairment for this client (129 sessions,
+verified with qlog and pcap). Then calibration laps in Unity, on the
+rendering machine used by participants with its frame rate capped at
+\SI{33}{fps}, selected the value in each region that produced a
+visible, graded effect. We then position each operating point against
+the standardized 5G QoS characteristics of 3GPP TS~23.501,
+Table~5.7.4-1~\cite{3gpp23501} (Table~\ref{tab:impairments}).
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{contrib/fig8_transport_map.pdf}
-  \caption{Transport map of the campaign client measured with the
-  headless harness: mean fraction of \gofs not on time per level. Only
-  graded and severe levels are plotted per sequence; null levels stay
-  below 2\% for every sequence. Loss below 1\% at LAN \gls{rtt} was null.}
-  \Description{Three line charts. Loss only at LAN RTT: graded from 1
-  to 1.5 percent, collapse from 1.75 percent. Delay only: null at 40 ms,
-  graded at 50 and 55 ms, collapse from 60 ms. 9 ms delay plus loss:
-  null at 0.01 percent, graded at 0.02, severe at 0.03, collapse from
-  0.05 percent. Longdress is the least tolerant sequence on loss.}
-  \label{fig:transport-map}
-\end{figure}
+\emph{Slice~B (loss only)} drops 2.5\% of packets with no added
+delay. At LAN round-trip times each loss is recovered within the \gof
+that suffered it, so loss alone is null below 1\% in the harness and
+becomes visible in playback only at about 12 losses per \gof. At
+$2.5 \times 10^{-2}$, B exceeds the loosest packet error rate in the
+5QI table ($10^{-2}$, 5QI~1) and therefore lies outside every
+standardized QoS class.
+
+\emph{Slice~C (delay only)} adds \SI{60}{\milli\second} of one-way
+delay with no loss. Without loss, delay does not reduce throughput; it
+only shifts each fetch later. The client's effective fetch budget is
+about \SI{90}{\milli\second} per \gof (Eq.~\eqref{eq:budget}), and
+the median \gof takes 35 to \SI{39}{\milli\second} to send, which
+leaves about 52 to \SI{55}{\milli\second} for network delay. The
+harness measured the degradation threshold at 50 to
+\SI{55}{\milli\second}. At \SI{60}{\milli\second}, C exceeds the
+largest \gls{xr} packet delay budget (\SI{20}{\milli\second}, 5QI~90)
+threefold but remains within the \SI{100}{\milli\second} budget of
+5QI~7 (live video streaming, interactive gaming).
+
+\emph{Slice~D (combined)} adds \SI{9}{\milli\second} of one-way delay
+and 0.05\% loss. Each component alone produces no late \gofs.
+Combined, they leave 58 to 90\% of \gofs late. Each loss reduces the
+congestion window, and the window grows back only while it limits
+sending, which is about \SI{2}{\milli\second} of each
+\SI{35}{\milli\second} burst. At \SI{9}{\milli\second} \gls{rtt}, a
+reduction is therefore barely recovered before the next \gof, the
+decoder's lead drains, and late \gofs arrive in blocks
+(Section~\ref{sec:model-drain}). The \SI{9}{\milli\second} delay is
+within the budgets of 5QI~88 (\SI{10}{\milli\second}) and 5QI~89/90
+(15 and \SI{20}{\milli\second}, visual content for cloud, edge or
+split rendering). The $5 \times 10^{-4}$ loss lies between the motion
+tracking class ($10^{-3}$, 5QI~87/88) and the split rendering class
+($10^{-4}$, 5QI~89/90).
+
+Together, the three slices show that single impairments degrade
+delivery only beyond the specification (B beyond every class, C beyond
+the \gls{xr} classes), while their combination degrades it within the
+\gls{xr} delay class. The loss level needed for a comparable effect
+falls by a factor of about 50 between LAN round-trip time and
+\SI{9}{\milli\second}.
+
+Two qualifications apply to this mapping. First, a 5QI packet delay
+budget covers the path from the UE to the UPF, whereas our impairment
+sits on the server-to-renderer path, so the mapping reads as ``if this
+path were a 5G QoS flow with these characteristics''. Second, the 5QI
+packet error rate counts packets lost after link-layer
+retransmission, which makes it comparable to the IP-level loss that
+\texttt{netem} applies. The operating points are specific to this
+client, since they depend on the \SI{133}{\milli\second} \gof period,
+the \SI{33}{fps} frame cap and the Reno congestion control in quic-go,
+which is why they were obtained by calibration.
 
 \begin{table}[t]
-  \caption{Impairment slices. All slices share the same origin,
-  renderer, casting stage and encoder (\gls{ldp} \gof{}=4). Values for
-  B--D are harness candidates \todo{pending Unity confirmation}.}
+  \caption{Slice operating points and their position against 3GPP
+  TS~23.501 Table~5.7.4-1~\cite{3gpp23501}. All slices share the same
+  origin, renderer, casting stage and encoder (\gls{ldp} \gof{}=4).}
   \label{tab:impairments}
   \centering
   \small
-  \begin{tabular}{@{}lllll@{}}
+  \begin{tabular}{@{}llll@{}}
     \toprule
-    Slice & Port & Loss $P$ & Delay $d$ & Role \\
+    Slice & One-way delay & Loss & Position against the 5QI table \\
     \midrule
-    A & 5001 & 0\%    & \SI{0}{\milli\second}  & clean reference; $\qc$, $\tau_{\mathrm{dl}}$, $N_p$ \\
-    B & 5002 & 1.25\% & \SI{0}{\milli\second}  & loss only, graded \\
-    C & 443  & 0\%    & \SI{55}{\milli\second} & delay only, graded \\
-    D & 5003 & 0.02\% & \SI{9}{\milli\second}  & interaction: each level null alone \\
+    A & none                    & none   & reference \\
+    B & none                    & 2.5\%  & loss beyond every class (loosest: $10^{-2}$, 5QI~1) \\
+    C & \SI{60}{\milli\second}  & none   & beyond \gls{xr} delay budgets ($\le$\SI{20}{\milli\second}), within 5QI~7 (\SI{100}{\milli\second}) \\
+    D & \SI{9}{\milli\second}   & 0.05\% & within \gls{xr} delay budgets (5QI~88--90), loss between $10^{-3}$ and $10^{-4}$ \\
     \bottomrule
   \end{tabular}
 \end{table}
