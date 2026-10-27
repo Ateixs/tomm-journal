@@ -44,12 +44,12 @@ frames at \SI{30}{fps}.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[height=2.4cm]{view-sd-front.pdf}\hfill
-  \includegraphics[height=2.4cm]{view-ld-front.pdf}\hfill
-  \includegraphics[height=2.4cm]{view-td-front.pdf}\hfill
-  \includegraphics[height=2.4cm]{view-sd-back.pdf}\hfill
-  \includegraphics[height=2.4cm]{view-ld-back.pdf}\hfill
-  \includegraphics[height=2.4cm]{view-td-back.pdf}
+  \includegraphics[height=2.9cm]{view-sd-front.pdf}\hspace{1.2mm}%
+  \includegraphics[height=2.9cm]{view-ld-front.pdf}\hspace{1.2mm}%
+  \includegraphics[height=2.9cm]{view-td-front.pdf}\hspace{1.2mm}%
+  \includegraphics[height=2.9cm]{view-sd-back.pdf}\hspace{1.2mm}%
+  \includegraphics[height=2.9cm]{view-ld-back.pdf}\hspace{1.2mm}%
+  \includegraphics[height=2.9cm]{view-td-back.pdf}
   \caption{Soldier, Longdress and ThaiDancer in the rendering scene,
   front (first three) and back (last three) views.}
   \Description{Six renderings of three dynamic point-cloud figures: a
@@ -125,7 +125,7 @@ computed per sequence as a stimulus descriptor only
 
 \begin{figure}[t]
   \centering
-  \begin{minipage}[b]{0.52\linewidth}
+  \begin{minipage}[c]{0.52\linewidth}
     \centering
     \includegraphics[width=\linewidth]{rate-distortion.pdf}
     \caption{Rate--distortion curves of the attribute video; labels are
@@ -135,7 +135,7 @@ computed per sequence as a stimulus descriptor only
     Longdress and ThaiDancer under RA 32, LDP 16 and LDP 4.}
     \label{fig:rd}
   \end{minipage}\hfill
-  \begin{minipage}[b]{0.45\linewidth}
+  \begin{minipage}[c]{0.45\linewidth}
     \centering
     \small
     \footnotesize\setlength{\tabcolsep}{3pt}\captionof{table}{\vpcc encoder configuration.}
@@ -245,73 +245,77 @@ disabled during participant sessions.
 \label{sec:sys-edge}
 
 The edge renderer is a Windows~11 workstation with an NVIDIA RTX~4070
-running Unity~6 (6000.0.61f1). The 5G-MAG decoder decodes \gls{hevc}
-with NVIDIA CUVID and hands its output over through OpenGL, so Unity
-must run with the OpenGLCore graphics API. This single requirement
-shapes the renderer: transport, decoder input and \gls{vr} output were
-each rebuilt around a decoder that only speaks OpenGL, in the four
-components below.
+running Unity~6. The 5G-MAG decoder decodes \gls{hevc} with NVIDIA
+CUVID and hands its output over through OpenGL, so Unity must run with
+the OpenGLCore graphics API. This single requirement shapes the
+renderer lane of Figure~\ref{fig:architecture}: transport, decoder
+input and \gls{vr} output were each rebuilt around a decoder that only
+speaks OpenGL. Diagrams of the four components are in the Online
+Appendix (Figures~\ref{fig:contrib-plugin}, \ref{fig:contrib-decoder}
+and~\ref{fig:contrib-gldx}).
 
-\subsubsection{Native HTTP/3 client}
+\subsubsection{Components}
 \label{sec:sys-client}
-Our first client started one \texttt{curl} process (ngtcp2) per \gof,
-so every \gof paid a new process, handshake and slow start, a late
-download could not be aborted, and the client had no view of the
-transport state. We replaced it with a native plugin built on lsquic
-with BoringSSL linked statically, exposed to Unity through a C
-interface of ten functions and a C\# binding (Online Appendix,
-Figure~\ref{fig:contrib-plugin}). The plugin opens one \quic connection
-per \SI{30}{\second} session and sends each \gof request on a new
-bidirectional stream. A worker thread owns the lsquic engine, the
-\gls{udp} socket and a slot table; requests return at once and are
-polled once per Unity frame. A body shorter than its announced
-\texttt{content-length} is reported as an error, so a truncated \gof
-never reaches the decoder. A cancel call sends \texttt{STOP\_SENDING},
-the server answers with \texttt{RESET\_STREAM}, and the connection and
-its congestion window survive. The plugin also exports the
-connection's \gls{rtt}, congestion window and lost and retransmitted
-packet counts. Cancellation is what makes graded impairment possible:
-without it, abandoned downloads consumed about two thirds of the
-bandwidth and any loss turned into collapse. With eight concurrent
-sessions, $98.6 \pm 0.6$\% of \gofs were on time with the plugin and
-$47.6 \pm 14.6$\% with \texttt{curl}; with one or two sessions the two
-performed alike, so the plugin's advantage lies in concurrency,
-session-wide congestion state and cancellation, not single-stream
-speed.
-
-\subsubsection{Deadline scheduler}
 \label{sec:sys-scheduler}
-The scheduler enforces real-time playout on a content clock
-(Figure~\ref{fig:contrib-scheduler}). With $D = \SI{133.3}{\milli\second}$
-the duration of a \gof{}=4 segment and $T_a$ the time of the first
-successful push to the decoder, \gof~$n$ is due at $E_n = T_a + nD$.
-The clock is anchored once per session and never paused, so the player
-does not rebuffer: a \gof that cannot be shown on time is discarded,
-and the viewer sees a brief freeze followed by a jump in the content.
-Per slot, the scheduler sets the abort time of the head request to
-$E_n + D$ (never earlier than \SI{50}{\milli\second} after it reached
-the head), waits for completion or abort, waits while the decoder
-input holds two or more \gofs, classifies the \gof by its lag behind
-$E_n$, and issues the next request. A lag of at most
-\SI{33}{\milli\second} is on time, a lag up to \SI{133}{\milli\second}
-is late but still pushed, and a larger lag is a loss; an aborted
-request is canceled and the scheduler skips ahead to the \gof whose
-slot contains the current content time. Before a push, an integrity
-check walks the \gls{v3c} units of the body, because a plausibly sized
-but malformed \gof would crash the decoder's bitstream reader.
+\label{sec:sys-decoder}
+\label{sec:sys-gldx}
+\emph{HTTP/3 client.} A native plugin built on lsquic, with BoringSSL
+linked statically, opens one \quic connection per session and sends
+each \gof request on a new bidirectional stream; requests return at
+once and are polled once per Unity frame. A body shorter than its
+announced length is reported as an error, so a truncated \gof never
+reaches the decoder, and a cancel sends \texttt{STOP\_SENDING} while
+the connection and its congestion window survive. Cancellation is what
+makes graded impairment possible: our first client, one \texttt{curl}
+process per \gof, could not abort a late download, so abandoned
+transfers consumed about two thirds of the bandwidth and any loss
+turned into collapse. The plugin also exports the connection's
+\gls{rtt}, congestion window and loss counters.
 
-The campaign client keeps one request in flight. A deeper prefetch
-hides the network: with four \gofs in flight the pusher ran about
-\SI{600}{\milli\second} ahead of the content clock, and on slice D the
-same graded effect needed several times the loss of
-Table~\ref{tab:impairments}. With one
-request in flight the delivery time of each \gof maps directly onto its
-deadline. Timestamps are quantized to the Unity frame, capped at
-\SI{30.3}{\milli\second}; since the loop spends one frame per \gof, a
-fetch must finish within about three frames (\SI{90}{\milli\second}) of
-the \SI{133}{\milli\second} slot to be on time. The scheduler logs one
-row per \gof (fetch time, queueing time, lag, outcome) and per-session
-counts of on-time, late, lost and skipped \gofs.
+\emph{Deadline scheduler.} Playout runs on a content clock that is
+anchored at the first push and never paused, so the player does not
+rebuffer (Figure~\ref{fig:contrib-scheduler}). With
+$D = \SI{133.3}{\milli\second}$ the \gof period, \gof~$n$ is due at
+$E_n = T_a + nD$. Per slot the scheduler keeps one request in flight,
+aborts it at $E_n + D$, waits while the decoder input holds two or more
+\gofs, and classifies a completed \gof by its lag: up to
+\SI{33}{\milli\second} is on time, up to \SI{133}{\milli\second} is late
+but pushed, beyond that it is dropped and the scheduler skips ahead to
+the \gof whose slot contains the current content time. One request in
+flight maps each \gof's delivery time directly onto its deadline; with
+four in flight the client ran about \SI{600}{\milli\second} ahead and
+hid the network. Timestamps are quantized to the Unity frame
+(\SI{30.3}{\milli\second}), so a fetch must finish within three frames
+of the \SI{133}{\milli\second} slot (Eq.~\eqref{eq:budget}). An
+integrity check walks the \gls{v3c} units of every body before it is
+pushed, and the scheduler logs one row per \gof and per-session counts
+of on-time, late, lost and skipped \gofs, the counters of
+Eq.~\eqref{eq:tlf}.
+
+\emph{Decoder input and teardown.} The 5G-MAG decoder
+plugin~\cite{fivegmag} receives segments only through a \gls{dash}
+client in a separate DLL. We replaced that DLL with one of the same
+name and exports that holds a bounded FIFO: Unity pushes one complete
+\gof per call and the decoder thread blocks until one is available, so
+\gofs reach the decoder from memory under our deadline policy and the
+decoder is unchanged. We modified the decoder itself in one place: a
+session that ended after starved delivery froze on teardown because
+video threads parked on an empty input never observed the finish flag;
+pushing an empty packet per stream before the join, as the audio path
+already does, removed the hang, and the fix was reported upstream. The
+decoder is restarted between conditions, which permits a fully
+randomized presentation order.
+
+\emph{Presentation.} In OpenGLCore, Unity's XR plug-in submits OpenGL
+images through OpenXR, which the SteamVR runtime silently rejects. We
+disabled every XR loader and wrote a native plugin that shares one
+Direct3D~11 texture per eye with OpenGL through
+\texttt{WGL\_NV\_DX\_interop2}, copies each eye target into it on the
+GPU, and submits both to the OpenVR compositor, reading head and eye
+poses back for Unity's cameras. Frames never leave the GPU; the
+application frame is capped at \SI{30.3}{\milli\second} to match the
+content, and SteamVR reprojects to the panel refresh rate. CUVID and
+the interop extension restrict the renderer to NVIDIA GPUs.
 
 \begin{figure}[t]
   \centering
@@ -326,49 +330,6 @@ counts of on-time, late, lost and skipped \gofs.
   late but pushed zone up to 133 ms, and a dropped zone beyond.}
   \label{fig:contrib-scheduler}
 \end{figure}
-
-\subsubsection{Decoder input and teardown}
-\label{sec:sys-decoder}
-The decoder plugin of the 5G-MAG \gls{v3c} platform~\cite{fivegmag}, an
-optimized \gls{tmc2} v25.0 decoder, receives segments only through a
-\gls{dash} client in a separate DLL, called through seven
-\texttt{dashc\_*} functions; its file-based alternative loads every
-segment at start-up. We wrote a replacement DLL with the same name and exports, which the
-decoder loads unchanged; it holds a bounded, thread-safe FIFO: Unity pushes one complete \gof per call, and the decoder thread
-blocks in \texttt{dashc\_getChunk} until one is available (Online
-Appendix, Figure~\ref{fig:contrib-decoder}). The DLL exports the queue
-depth, used by the scheduler's gate, and \gofs reach the decoder from
-memory. We modified the decoder itself in one place. When a session
-ended after starved delivery, Unity froze on teardown: the join in
-\texttt{stopVideoDecoders()} waited for video threads parked on an
-empty input that never observed the finish flag. Our fix pushes an
-empty packet per video stream before the join, as the audio path of
-the same file already does (four lines). An unmodified rebuild
-reproduced the freeze; the patched build passed ten sessions in one
-process, five of them starved, without a hang. We reported the fix
-upstream. We restart the decoder between conditions, which also
-permits sequences with different atlas sizes in one session and a fully
-randomized presentation order.
-
-\subsubsection{Direct OpenVR submission}
-\label{sec:sys-gldx}
-In OpenGLCore, Unity's XR plug-in submits OpenGL swapchain images
-through OpenXR; the SteamVR runtime expects Direct3D~11 textures from
-this application, rejects the OpenGL images without an error, and the
-headset shows nothing. Since the decoder rules out Direct3D, we disabled every XR
-loader and wrote a native plugin that delivers the frames to OpenVR
-directly (Online Appendix, Figure~\ref{fig:contrib-gldx}). It creates a
-Direct3D~11 device and one shared texture per eye
-(1832$\times$1920), registers each as an OpenGL texture through
-\texttt{WGL\_NV\_DX\_interop2}, and each frame copies the eye targets
-into the shared textures with a vertical flip, calls
-\texttt{WaitGetPoses} and submits both textures to the compositor; the
-frames never leave the GPU. In the other direction it reads the head
-and per-eye poses and projections from OpenVR and converts them to
-Unity's left-handed frame. The application frame is capped at
-\SI{30.3}{\milli\second} to match the content, and SteamVR reprojects
-to the panel refresh rate. CUVID and the interop extension restrict
-the renderer to NVIDIA GPUs.
 
 \subsection{Stage 2: Edge to Headset}
 \label{sec:sys-stage2}

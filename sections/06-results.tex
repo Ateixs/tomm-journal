@@ -3,25 +3,7 @@
 
 \subsection{Transport Characterization}
 \label{sec:res-transport}
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{contrib/fig8_transport_map.pdf}
-  \caption{Transport map of the campaign client measured with the
-  headless harness: mean fraction of \gofs not on time per level. Only
-  graded and severe levels are plotted per sequence; null levels stay
-  below 2\% for every sequence. Loss below 1\% at LAN \gls{rtt} was null.}
-  \Description{Three line charts. Loss only at LAN RTT: graded from 1
-  to 1.5 percent, collapse from 1.75 percent. Delay only: null at 40 ms,
-  graded at 50 and 55 ms, collapse from 60 ms. 9 ms delay plus loss:
-  null at 0.01 percent, graded at 0.02, severe at 0.03, collapse from
-  0.05 percent. Longdress is the least tolerant sequence on loss.}
-  \label{fig:transport-map}
-\end{figure}
-\todo{Figure~\ref{fig:transport-map} still marks the harness
-candidates (B 1.25\%, C \SI{55}{\milli\second}, D 0.02\%); regenerate
-with the final operating points of Table~\ref{tab:impairments} and
-report the per-sequence not-on-time fractions from the Unity laps
-here.}
+
 \todo{Layer~1 checks against logs (Table~\ref{tab:predictions}):
 pure-delay threshold versus the delay scan; $p_{\mathrm{slow}}$ of
 Eq.~\eqref{eq:pslow} versus the logged slow-unit fraction per session,
