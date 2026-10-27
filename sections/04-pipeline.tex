@@ -5,9 +5,9 @@ The experiments run on the \mosaic pipeline~\cite{mosaic2026}, rebuilt
 for this study. Figure~\ref{fig:architecture} shows the complete
 pipeline in four lanes, from content preparation to the headset, and
 marks every component as new, as an upstream component we patched, or
-as upstream software used unmodified; Table~\ref{tab:adaptations} in
-the Online Appendix lists the upstream baseline of each component, the
-change made and its reason. Open reference software was reused
+as upstream software used unmodified; the Online
+Appendix\ifappendix{} (Table~\ref{tab:adaptations})\fi{} lists the
+upstream baseline of each component, the change made and its reason. Open reference software was reused
 wherever possible and changed only where a hard constraint forced it.
 Stage~1 carries \vpcc content from the origin to the edge renderer
 over \quic and is the only stage that is impaired; Stage~2 casts the
@@ -68,8 +68,8 @@ and the reconstructed YUV that later encoding stages depend on. With
 \gls{hm}~16.20+SCM~8.8 behind this interface, video coding dominates
 the encoding time of dense sequences. We point the geometry and
 attribute paths to a shim that keeps the \gls{hm} interface and
-replaces the encoder behind it (Online Appendix,
-Figure~\ref{fig:contrib-encoder}). The shim parses the \gls{hm}-style
+replaces the encoder behind it\ifappendix{} (Online Appendix,
+Figure~\ref{fig:contrib-encoder})\fi. The shim parses the \gls{hm}-style
 arguments, selects the \gls{ldp} or \gls{ra} profile from the name of
 the configuration file, encodes with FFmpeg~6.1.1 and
 libx265~3.5~\cite{x265} at the requested QP (\texttt{bframes=0},
@@ -251,8 +251,8 @@ the OpenGLCore graphics API. This single requirement shapes the
 renderer lane of Figure~\ref{fig:architecture}: transport, decoder
 input and \gls{vr} output were each rebuilt around a decoder that only
 speaks OpenGL. Diagrams of the four components are in the Online
-Appendix (Figures~\ref{fig:contrib-plugin}, \ref{fig:contrib-decoder}
-and~\ref{fig:contrib-gldx}).
+Appendix\ifappendix{} (Figures~\ref{fig:contrib-plugin},
+\ref{fig:contrib-decoder} and~\ref{fig:contrib-gldx})\fi.
 
 \subsubsection{Components}
 \label{sec:sys-client}

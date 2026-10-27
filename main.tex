@@ -91,6 +91,11 @@
 \newcommand{\crystallayerone}{%
   \tlf = \frac{\text{units skipped} + \text{units jumped over}}{\text{units due}}}
 
+% Online Appendix switch: \appendixfalse hides it (body page count only);
+% the appendix cross-references in Section 4 are wrapped in \ifappendix.
+\newif\ifappendix
+\appendixfalse
+
 % Editorial helpers (remove before submission)
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\note}[1]{\textcolor{blue}{[NOTE: #1]}}
@@ -225,11 +230,15 @@ acknowledgments as applicable.}
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 
+%% Online Appendix. Toggle \appendixtrue / \appendixfalse in the preamble
+%% (switched off while checking the body's page count).
+\ifappendix
 \clearpage
 \appendix
 \renewcommand{\topfraction}{0.95}\renewcommand{\bottomfraction}{0.95}
 \renewcommand{\textfraction}{0.05}\renewcommand{\floatpagefraction}{0.8}
 \setcounter{totalnumber}{4}\setcounter{topnumber}{3}
 \input{sections/A-appendix}
+\fi
 
 \end{document}
