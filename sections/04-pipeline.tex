@@ -203,59 +203,32 @@ every measurement lap we compare the \texttt{netem} drop counters with
 the configured loss.
 
 \subsubsection{Transport confounds}
+\label{sec:sys-confounds}
 Before calibration we found and removed six effects that produced loss
-or delay that had not been configured (Table~\ref{tab:confounds}).
-Each of them, on its own, created a loss cliff that looked like a
-property of \vpcc over \quic. The two most consequential were spurious
-losses: segmentation-offload bursts and a multi-queue virtual interface
-reordered packets within a flow, and because the client acknowledges
-every packet at once, the server's reordering threshold declared the
-late packets lost and cut the congestion window by 0.7 each time.
-After the corrections, the only packets declared lost on slices A and
-C are path-MTU probes, and the losses on slices B and D match the
-\texttt{netem} drop counters.
-
-\begin{table*}[t]
-  \caption{Transport confounds removed before calibration. Numbers are
-  per \SI{30}{\second} session unless stated.}
-  \label{tab:confounds}
-  \small
-  \setlength{\tabcolsep}{4pt}
-  \renewcommand{\arraystretch}{1.1}
-  \begin{tabularx}{\textwidth}{@{}c>{\raggedright\arraybackslash}X
-                                   >{\raggedright\arraybackslash}p{3.6cm}
-                                   >{\raggedright\arraybackslash}p{3.2cm}
-                                   >{\raggedright\arraybackslash}p{2.6cm}@{}}
-    \toprule
-    & Cause & Before & After & Fix \\
-    \midrule
-    1 & Segmentation-offload bursts reorder packets; the server declares them lost
-      & 367 loss events, 364 spurious; cwnd capped near \SI{126}{kB}
-      & no spurious loss; cwnd up to \SI{1.3}{MB}
-      & \texttt{QUIC\_GO\_}\allowbreak\texttt{DISABLE\_GSO} \\
-    2 & Twelve virtio TX queues spread one \quic flow and reorder it
-      & $\approx$2.5\% of packets declared lost, 97--99\% spuriously; cwnd $\approx$\SI{30}{kB}
-      & no spurious loss on 12 connections; cwnd 130--\SI{160}{kB}
-      & one TX queue (\texttt{ethtool -L}) \\
-    3 & \texttt{netem} without a rate-limited parent drops fewer packets than configured
-      & $\approx$7$\times$ fewer drops than configured
-      & 1\% configured, 1.005\% measured
-      & TBF parent per port \\
-    4 & TBF bucket smaller than one \SI{1450}{B} packet on the delay chains
-      & 34\% of packets hit the rate limiter
-      & 0.8\%
-      & burst \SI{2.5}{kB} \\
-    5 & Default \texttt{netem} queue overflows at \SI{20}{\milli\second} one-way delay
-      & 73 drops on a delay-only chain
-      & no drops
-      & queue limit raised \\
-    6 & VPN tunnel over \gls{tcp} between client and server
-      & RTT under load p90 \SI{20}{\milli\second}, p99 \SI{33}{\milli\second}
-      & p90 1--\SI{2}{\milli\second}
-      & isolated VLAN \\
-    \bottomrule
-  \end{tabularx}
-\end{table*}
+or delay we had not configured, each of which, on its own, created a
+loss cliff that looked like a property of \vpcc over \quic. Two were
+spurious losses: generic segmentation offload in quic-go and the
+twelve transmit queues of the virtual interface each reordered packets
+within a flow, and because the client acknowledges every packet at
+once, the server's reordering threshold declared the late packets lost
+and cut its congestion window by 0.7 each time; in a \SI{30}{\second}
+session 364 of 367 declared losses were spurious, and the window
+stayed near \SI{30}{kB} instead of growing past \SI{1}{MB}. Three were
+in the impairment chain itself: a \texttt{netem} queue without a
+rate-limited parent dropped about seven times fewer packets than
+configured, a token bucket rounded below one packet rate-limited a
+third of the packets on the delay chains, and the default queue
+overflowed at \SI{20}{\milli\second} of delay. The sixth was the path:
+a VPN that had fallen back to \gls{tcp} added a 99th-percentile
+round-trip time of \SI{33}{\milli\second} under load. We disabled
+offload, pinned one transmit queue, gave each \texttt{netem} queue a
+token-bucket parent with a burst above one packet and a larger limit,
+and moved the renderer onto an isolated VLAN with a 90th-percentile
+round-trip time of 1--\SI{2}{\milli\second}. After these corrections,
+the only packets declared lost on slices A and C are path-MTU probes,
+the losses on slices B and D match the \texttt{netem} drop counters
+(1.005\% measured for 1\% configured), and every lap is preceded by 60
+probes that must arrive without loss within \SI{5}{\milli\second}.
 
 \subsubsection{Server-side measurement}
 During calibration laps quic-go writes one qlog trace per connection

@@ -50,7 +50,7 @@ summarized there.
     Origin and impairment
       & Caddy with \texttt{netem} on the egress interface
       & HTB $\rightarrow$ TBF $\rightarrow$ \texttt{netem} chain per port, GSO disabled, single TX queue, enlarged \texttt{netem} queue, qlog and pcap joined per GOF
-      & Transport confounds (Table~\ref{tab:confounds}) \\
+      & Transport confounds (Section~\ref{sec:sys-confounds}) \\
     Measurement
       & Measurements only from the Unity Editor
       & Headless harness that loads the same plugin and replays the scheduler, validated against Unity
@@ -90,7 +90,7 @@ summarized there.
 \begin{figure}[!htb]
   \centering
   \includegraphics[width=0.92\textwidth]{contrib/fig7_origin_impairment.pdf}
-  \caption{Origin, impairment chain and server-side measurement (Section~\ref{sec:sys-stage1}). Numbered badges locate the transport confounds of Table~\ref{tab:confounds}.}
+  \caption{Origin, impairment chain and server-side measurement (Section~\ref{sec:sys-stage1}). Numbered badges locate the six transport confounds of Section~\ref{sec:sys-confounds}, in the order given there.}
   \Description{Caddy with four listeners feeds an HTB root that classifies by source port into four chains of TBF and netem, for clean, loss, delay and combined slices, then a virtio NIC with one transmit queue. qlog from Caddy and pcap after the qdiscs are joined into per-GOF metrics.}
   \label{fig:contrib-origin}
 \end{figure}
