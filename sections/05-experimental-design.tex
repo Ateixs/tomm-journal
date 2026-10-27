@@ -1,68 +1,14 @@
 \section{Experimental Design}
 \label{sec:design}
 
-\subsection{Preliminary Three-Tier Study}
-\label{sec:design-pilot}
-
-The design builds on a three-tier study run on the same pipeline
-($N=20$)~\cite{mosaic2026}. Each tier paired a network profile with
-the encoder configuration an operator would deploy for it: a clean
-tier (A) with \gls{ra} \gof{}=32; a loss-dominant tier (B, 1.9\% loss,
-\SI{5}{\milli\second} added latency) with \gls{ldp} \gof{}=16; and a
-latency-dominant tier (C, 0.6\% loss, \SI{9}{\milli\second}) with
-\gls{ldp} \gof{}=4. The three sequences were rated in a fixed order on
-the \gls{acr} scale. Figure~\ref{fig:pilot} summarizes the outcome.
-Mean opinion fell monotonically from 4.72 (A) to 4.07 (B) and 3.21
-(C), with the strongest content dependence on Longdress
-($4.89 \rightarrow 2.21$), the most attribute-dominated bitstream
-(Section~\ref{sec:sys-content}). Tier~C carried \emph{less} loss than
-tier~B yet scored lower, pointing to the \gof deadline budget rather
-than loss magnitude as the driver. The per-session deadline-miss rate
-correlated with the ratings only partially
-($\rho_{\mathrm{Spearman}} = -0.34$, $p < 10^{-3}$), because a missed
-unit removes a different duration of content at each \gof length. On
-the transport side, goodput varied more across sequences
-(\SIrange{33}{42}{Mbps}) than across tiers (under \SI{6}{Mbps} within a
-sequence) and did not fall under impairment, as \quic's congestion
-controller reclaimed throughput after each recovery.
-
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.49\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{mosaic-mos.pdf}
-    \caption{Mean opinion score with 95\% \gls{ci}.}
-    \label{fig:pilot-mos}
-  \end{subfigure}\hfill
-  \begin{subfigure}[b]{0.49\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{mosaic-goodput.pdf}
-    \caption{Mean application-layer goodput.}
-    \label{fig:pilot-goodput}
-  \end{subfigure}
-  \caption{Three-tier study ($N=20$), per sequence and tier; data
-  from~\cite{mosaic2026}.}
-  \label{fig:pilot}
-\end{figure}
-
-Four lessons shape the present design. Impairment and encoder
-configuration were confounded in every tier, so the slices below hold
-the encoder fixed, the clean reference included. The deadline-miss
-rate is an incomplete predictor, so the analysis uses the skip
-fraction $\tlf$ of the client's session counters and tests whether it
-is the only channel. The presentation
-order was fixed, so the present study balances it with a Latin square.
-And goodput was not the limiting resource, so impairment is applied as
-loss and added latency rather than as bandwidth caps.
-
 \subsection{Network Conditions}
 \label{sec:design-network}
 
 Four slices share one origin, one renderer and one encoding of each
 sequence, \gls{ldp} \gof{}=4, and differ only in the impairment
 applied at the origin's egress (Table~\ref{tab:impairments}). Holding
-the encoder fixed across slices is what the three-tier study could not
-do; it makes Slice~A, with no added loss or delay, a valid reference
+the encoder fixed across slices, which the three-tier study
+of~\cite{mosaic2026} did not, makes Slice~A, with no added loss or delay, a valid reference
 for B, C and D, and it is the slice from which the ceilings $\qc$ of
 Eq.~\eqref{eq:ceiling}, the clean transfer time $\tau_{\mathrm{dl}}$
 and the packet counts $N_p$ of Section~\ref{sec:model-layer1} are
